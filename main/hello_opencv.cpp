@@ -48,9 +48,6 @@ typedef unsigned char byte_t;
 
 static char TAG[]="hello_opencv";
 
-static cv::Mat curr_frame;
-static bool new_frame = false;
-
 extern "C" {
 void app_main(void);
 }
@@ -111,9 +108,9 @@ void get_frame(Mat& frame)
             uint16_t pixel = *pixels_raw;
             pixels_raw++;
 
-            frame.at<uint8_t>(row, col, 0) = (uint8_t)(pixel & 0x1f); // B
-            frame.at<uint8_t>(row, col, 1) = (uint8_t)((pixel >> 5) & 0x3f); // G
-            frame.at<uint8_t>(row, col, 2) = (uint8_t)((pixel >> 11) & 0x1f); // R
+            frame.at<uint8_t>(row, col, 0) = (uint8_t)(((double)(pixel & 0x1f)) / 32.0 * 255); // B
+            frame.at<uint8_t>(row, col, 1) = (uint8_t)(((double)((pixel >> 5) & 0x3f)) / 64.0 * 255); // G
+            frame.at<uint8_t>(row, col, 2) = (uint8_t)(((double)((pixel >> 11) & 0x1f)) / 32 * 255); // R
         }
     }
 
@@ -128,17 +125,17 @@ void send_frame(const Mat& frame)
     printf("S"); // Start of transmission
 
     // Transmit the number of rows and columns
-    printf("%04x", curr_frame.rows);
-    printf("%04x", curr_frame.cols);
+    printf("%04x", frame.rows);
+    printf("%04x", frame.cols);
 
     // Transmit the data of the frame.
-    for (int row = 0; row < curr_frame.rows; row++) 
+    for (int row = 0; row < frame.rows; row++) 
     {
-        for (int col = 0; col < curr_frame.cols; col++)
+        for (int col = 0; col < frame.cols; col++)
         {
-            for (int channel = 0; channel < curr_frame.channels(); channel++)
+            for (int channel = 0; channel < frame.channels(); channel++)
             {
-                printf("%02x", curr_frame.at<uint8_t>(row, col, channel));
+                printf("%02x", frame.at<uint8_t>(row, col, channel));
             }
         }
     }
@@ -148,62 +145,9 @@ void send_frame(const Mat& frame)
     fflush(stdout);
 }
 
-/// @brief  Sends the last frame captured over the serial port.
-void task_send_frame(void* arg)
-{
-    // How long between sends. Currently experimental; I'm not sure how many ticks
-    // a "send" will take.
-    const TickType_t SEND_PERIOD = 30;
-
-    // The amount of time this thread should wait if no new frame was found.
-    const TickType_t WAIT_PERIOD = 10;
-
-    // This task should loop forever, constantly updating the frame.
-    while (true)
-    {
-        // Wait until there's a new frame to send
-        if (!new_frame)
-        {
-            vTaskDelay(WAIT_PERIOD);
-            continue;
-        }
-
-        auto start_time = xTaskGetTickCount();
-
-        // Begin transmission
-        printf("S"); // Start of transmission
-
-        // Transmit the number of rows and columns
-        printf("%04x", curr_frame.rows);
-        printf("%04x", curr_frame.cols);
-
-        // Transmit the data of the frame.
-        for (int row = 0; row < curr_frame.rows; row++) 
-        {
-            for (int col = 0; col < curr_frame.cols; col++)
-            {
-                for (int channel = 0; channel < curr_frame.channels(); channel++)
-                {
-                    printf("%02x", curr_frame.at<uint8_t>(row, col, channel));
-                }
-            }
-        }
-
-        // End transmission and flush
-        printf("E\n");
-        fflush(stdout);
-        new_frame = false;
-
-        // Enforce the constant period.
-        auto elapsed_ticks = xTaskGetTickCount() - start_time; // Around 310 on avg
-
-        vTaskDelay(SEND_PERIOD /* - elapsed_ticks */);
-    }
-}
-
 /// @brief An unending task to get frames from the camera as
 /// OpenCV matrices.
-void task_get_frames(void* arg)
+void task_img_usb(void* arg)
 {
     const TickType_t TASK_PERIOD = 30;
 
@@ -216,19 +160,10 @@ void task_get_frames(void* arg)
 
     while (true)
     {
-        /*
-        // Don't get a new frame until 
-        if (new_frame)
-        {
-            vTaskDelay(WAIT_PERIOD);
-            continue;
-        }
-        */
 
         auto start_tick = xTaskGetTickCount();
         get_frame(frame);
-        new_frame = true;
-        send_frame(curr_frame);
+        send_frame(frame);
 
         auto elapsed_ticks = xTaskGetTickCount() - start_tick;
         vTaskDelay(TASK_PERIOD /*- elapsed_ticks */);
@@ -237,8 +172,7 @@ void task_get_frames(void* arg)
 
 void app_main(void)
 {
-    xTaskCreate(task_get_frames, "get_frames", 4096, nullptr, 0, nullptr);
-    //xTaskCreate(task_send_frame, "send_frame", 4096, nullptr, 1, nullptr);
+    xTaskCreate(task_img_usb, "img_usb", 4096, nullptr, 0, nullptr);
 
     while (true)
     {
