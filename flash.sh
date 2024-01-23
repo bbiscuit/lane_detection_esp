@@ -1,0 +1,1 @@
+idf.py -p COM4 -b 38400 flash
