@@ -48,9 +48,6 @@ typedef unsigned char byte_t;
 
 static char TAG[]="hello_opencv";
 
-static cv::Mat curr_frame;
-static bool new_frame = false;
-
 extern "C" {
 void app_main(void);
 }
@@ -128,17 +125,17 @@ void send_frame(const Mat& frame)
     printf("S"); // Start of transmission
 
     // Transmit the number of rows and columns
-    printf("%04x", curr_frame.rows);
-    printf("%04x", curr_frame.cols);
+    printf("%04x", frame.rows);
+    printf("%04x", frame.cols);
 
     // Transmit the data of the frame.
-    for (int row = 0; row < curr_frame.rows; row++) 
+    for (int row = 0; row < frame.rows; row++) 
     {
-        for (int col = 0; col < curr_frame.cols; col++)
+        for (int col = 0; col < frame.cols; col++)
         {
-            for (int channel = 0; channel < curr_frame.channels(); channel++)
+            for (int channel = 0; channel < frame.channels(); channel++)
             {
-                printf("%02x", curr_frame.at<uint8_t>(row, col, channel));
+                printf("%02x", frame.at<uint8_t>(row, col, channel));
             }
         }
     }
@@ -166,8 +163,7 @@ void task_img_usb(void* arg)
 
         auto start_tick = xTaskGetTickCount();
         get_frame(frame);
-        new_frame = true;
-        send_frame(curr_frame);
+        send_frame(frame);
 
         auto elapsed_ticks = xTaskGetTickCount() - start_tick;
         vTaskDelay(TASK_PERIOD /*- elapsed_ticks */);
