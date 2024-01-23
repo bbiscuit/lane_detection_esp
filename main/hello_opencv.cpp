@@ -108,9 +108,9 @@ void get_frame(Mat& frame)
             uint16_t pixel = *pixels_raw;
             pixels_raw++;
 
-            frame.at<uint8_t>(row, col, 0) = (uint8_t)(pixel & 0x1f); // B
-            frame.at<uint8_t>(row, col, 1) = (uint8_t)((pixel >> 5) & 0x3f); // G
-            frame.at<uint8_t>(row, col, 2) = (uint8_t)((pixel >> 11) & 0x1f); // R
+            frame.at<uint8_t>(row, col, 0) = (uint8_t)(((double)(pixel & 0x1f)) / 32.0 * 255); // B
+            frame.at<uint8_t>(row, col, 1) = (uint8_t)(((double)((pixel >> 5) & 0x3f)) / 64.0 * 255); // G
+            frame.at<uint8_t>(row, col, 2) = (uint8_t)(((double)((pixel >> 11) & 0x1f)) / 32 * 255); // R
         }
     }
 

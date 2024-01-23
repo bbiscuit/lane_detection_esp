@@ -28,13 +28,13 @@ def read_frame(s: serial.Serial):
         mat_data.append(curr_row)
 
     # Return the BGR image.
-    return numpy.array(mat_data)
+    return numpy.array(mat_data, dtype=numpy.uint8)
 
 def display_frames(s: serial.Serial):
     while True:
         frame = read_frame(s)
-        print(frame.shape)
-        #frame = cv2.resize(frame, (300, 300))
+        print(frame)
+        frame = cv2.resize(frame, (300, 300))
         cv2.imshow('Frame', frame)
         key_v = cv2.waitKey(1)
         if key_v == 13:
