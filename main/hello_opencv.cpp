@@ -148,62 +148,9 @@ void send_frame(const Mat& frame)
     fflush(stdout);
 }
 
-/// @brief  Sends the last frame captured over the serial port.
-void task_send_frame(void* arg)
-{
-    // How long between sends. Currently experimental; I'm not sure how many ticks
-    // a "send" will take.
-    const TickType_t SEND_PERIOD = 30;
-
-    // The amount of time this thread should wait if no new frame was found.
-    const TickType_t WAIT_PERIOD = 10;
-
-    // This task should loop forever, constantly updating the frame.
-    while (true)
-    {
-        // Wait until there's a new frame to send
-        if (!new_frame)
-        {
-            vTaskDelay(WAIT_PERIOD);
-            continue;
-        }
-
-        auto start_time = xTaskGetTickCount();
-
-        // Begin transmission
-        printf("S"); // Start of transmission
-
-        // Transmit the number of rows and columns
-        printf("%04x", curr_frame.rows);
-        printf("%04x", curr_frame.cols);
-
-        // Transmit the data of the frame.
-        for (int row = 0; row < curr_frame.rows; row++) 
-        {
-            for (int col = 0; col < curr_frame.cols; col++)
-            {
-                for (int channel = 0; channel < curr_frame.channels(); channel++)
-                {
-                    printf("%02x", curr_frame.at<uint8_t>(row, col, channel));
-                }
-            }
-        }
-
-        // End transmission and flush
-        printf("E\n");
-        fflush(stdout);
-        new_frame = false;
-
-        // Enforce the constant period.
-        auto elapsed_ticks = xTaskGetTickCount() - start_time; // Around 310 on avg
-
-        vTaskDelay(SEND_PERIOD /* - elapsed_ticks */);
-    }
-}
-
 /// @brief An unending task to get frames from the camera as
 /// OpenCV matrices.
-void task_get_frames(void* arg)
+void task_img_usb(void* arg)
 {
     const TickType_t TASK_PERIOD = 30;
 
@@ -216,14 +163,6 @@ void task_get_frames(void* arg)
 
     while (true)
     {
-        /*
-        // Don't get a new frame until 
-        if (new_frame)
-        {
-            vTaskDelay(WAIT_PERIOD);
-            continue;
-        }
-        */
 
         auto start_tick = xTaskGetTickCount();
         get_frame(frame);
@@ -237,8 +176,7 @@ void task_get_frames(void* arg)
 
 void app_main(void)
 {
-    xTaskCreate(task_get_frames, "get_frames", 4096, nullptr, 0, nullptr);
-    //xTaskCreate(task_send_frame, "send_frame", 4096, nullptr, 1, nullptr);
+    xTaskCreate(task_img_usb, "img_usb", 4096, nullptr, 0, nullptr);
 
     while (true)
     {
