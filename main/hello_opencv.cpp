@@ -90,39 +90,28 @@ void config_cam()
 
 /// @brief Gets a frame from the camera
 /// @return The camera frame, as an OpenCV matrix.
-void get_frame(Mat& frame)
+Mat get_frame()
 {
     // Take a picture from the camera.
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAG, "Camera capture failed");
-        return;
+        return Mat();
     }
     
     // Build the OpenCV matrix.
-    uint16_t* pixels_raw = static_cast<uint16_t*>(static_cast<void*>(fb->buf));
-    for (uint8_t row = 0; row < frame.rows; row++)
-    {
-        for (uint8_t col = 0; col < frame.cols; col++)
-        {
-            uint16_t pixel = *pixels_raw;
-            pixels_raw++;
-
-            frame.at<uint8_t>(row, col, 0) = (uint8_t)(((double)(pixel & 0x1f)) / 32.0 * 255); // B
-            frame.at<uint8_t>(row, col, 1) = (uint8_t)(((double)((pixel >> 5) & 0x3f)) / 64.0 * 255); // G
-            frame.at<uint8_t>(row, col, 2) = (uint8_t)(((double)((pixel >> 11) & 0x1f)) / 32 * 255); // R
-        }
-    }
+    // CV_8UC2 is two-channel color, with 8-bit 
+    Mat result(fb->height, fb->width, CV_8UC2, fb->buf);
 
     // Cleanup and return.
     esp_camera_fb_return(fb);
-    return;
+    return result;
 }
 
 void send_frame(const Mat& frame)
 {
     // Begin transmission
-    printf("S"); // Start of transmission
+    printf("START"); // Start of transmission
 
     // Transmit the number of rows and columns
     printf("%04x", frame.rows);
@@ -162,7 +151,7 @@ void task_img_usb(void* arg)
     {
 
         auto start_tick = xTaskGetTickCount();
-        get_frame(frame);
+        Mat frame = get_frame();
         send_frame(frame);
 
         auto elapsed_ticks = xTaskGetTickCount() - start_tick;
