@@ -1,4 +1,5 @@
 idf_component_register(
+#register_component(
         SRCS
             hello_opencv.cpp
             

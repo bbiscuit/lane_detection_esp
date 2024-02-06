@@ -1,0 +1,1 @@
+cmd='/usr/bin/cmake;-DSDKCONFIG=/home/andrew/esp/ESP-Image-USB/sdkconfig;-DIDF_PATH=/home/andrew/esp/esp-idf;-DSECURE_BOOT_SIGNING_KEY=/home/andrew/esp/ESP-Image-USB;-DEXTRA_COMPONENT_DIRS=/home/andrew/esp/esp-idf/components/bootloader;-GUnix Makefiles;-S;<SOURCE_DIR><SOURCE_SUBDIR>;-B;<BINARY_DIR>'
