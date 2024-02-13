@@ -23,6 +23,7 @@
 // FreeRTOS imports
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/portmacro.h"
 
 
 // In-project imports
@@ -258,7 +259,7 @@ void task_canny_and_disp(void* arg)
         // Get the canny of the current frame.
         in_q->top(working_frame);
         cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652GRAY);
-        //cv::Canny(working_frame, working_frame, 50, 150);
+        cv::Canny(working_frame, working_frame, 50, 150);
 
 
         if (max_out_size > out_q->size())
