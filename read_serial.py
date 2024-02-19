@@ -111,5 +111,6 @@ def main():
     main_loop(s, thresh_color)
     s.close()
 
+
 if __name__ == '__main__':
     main()

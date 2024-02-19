@@ -5,11 +5,15 @@
 #include "opencv2/imgcodecs.hpp"
 #define EPS 192
 
+// SSD1306 Imports
+#include "ssd1306.h"
+
 
 // Stdlib imports imports
 #include <stdio.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
+#include <iostream>
 
 
 // Esp imports
@@ -18,6 +22,7 @@
 #include <esp_log.h>
 #include "sdkconfig.h"
 #include "esp_camera.h"
+#include "esp_log.h"
 
 
 // FreeRTOS imports
@@ -56,6 +61,23 @@ typedef unsigned char byte_t;
 
 
 static char TAG[]="hello_opencv";
+
+
+uint8_t batman[] = {
+		0b11111111, 0b11111111, 0b11111111, 0b11111111,
+		0b11111111, 0b10011111, 0b11111001, 0b11111111,
+		0b11111110, 0b00111110, 0b01111100, 0b01111111,
+		0b11111000, 0b00111100, 0b00111100, 0b00011111,
+		0b11110000, 0b00011100, 0b00111000, 0b00001111,
+		0b11110000, 0b00000000, 0b00000000, 0b00001111,
+		0b11100000, 0b00000000, 0b00000000, 0b00000111,
+		0b11100000, 0b00000000, 0b00000000, 0b00000111,
+		0b11110000, 0b00000000, 0b00000000, 0b00001111,
+		0b11110000, 0b11000100, 0b00100011, 0b00001111,
+		0b11111001, 0b11111110, 0b01111111, 0b10011111,
+		0b11111100, 0b11111110, 0b01111111, 0b00111111,
+		0b11111111, 0b11111111, 0b11111111, 0b11111111
+};
 
 
 // The parameters which are sent to a task.
@@ -220,22 +242,74 @@ void task_get_img_matrix(void* arg)
             continue;
         }
 
-        auto start_tick = xTaskGetTickCount();
         auto frame = get_frame();
         out_q->push(frame);
-        auto end_tick = xTaskGetTickCount();
-
-        
 
         vTaskDelay(TASK_PERIOD);
     }
 }
 
 
+/// @brief Takes a binary opencv matrix (only 0's and f's) and converts it into a bitmask, for
+/// efficient display on an LCD screen which does not support color.
+/// @param bin_mat The binary OpenCV matrix (only 0's and f's). It's assumed that this matrix has
+/// the same dimensions as the screen to which this bitmask will be written.
+/// @param out The buffer in which the bitmask is stored. This function ASSUMES that this buffer is
+/// correctly sized. This theoretically ought to be the number of columns on the screen divided by
+/// 8, multiplied by the number of rows on the screen. So, for a 128x64 LCD, for example, this
+/// should be of size 128.
+void mat_to_bmask(const cv::Mat& bin_mat, uint8_t* out)
+{
+    uint8_t bm_index = 0;
+
+    for (uint8_t row = 0; row < bin_mat.rows; row++)
+    {
+        uint8_t working_val = 0x0;
+
+        for (uint8_t col = 0; col < bin_mat.cols; col++)
+        {
+            // Setup the working and shift value which will be used to assign in case of a one.
+            const uint8_t bit_num = 7 - col % 8; // This makes col 0 be MSB, while col 7 is LSB
+
+            // Set the correct bit in the working val, and write to the bitmask.
+            const uint8_t val = bin_mat.at<uint8_t>(row, col);
+            if (0 != val)
+            {
+                working_val = (working_val | (0x1 << bit_num));
+                out[bm_index] = working_val;
+            }
+
+            // Update the working value according to the current iteration.
+            if (0 == bit_num)
+            {
+                working_val = 0x0;
+                bm_index++;
+            }
+        }
+    }
+}
+
+
+void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
+{
+    for (uint8_t row = 0; row < bin_mat.rows; row++)
+    {
+        for (uint8_t col = 0; col < bin_mat.cols; col++)
+        {
+            if (0 != bin_mat.at<uint8_t>(row, col))
+            {
+                _ssd1306_pixel(&screen, col, row, false);
+            }
+        }
+    }
+    ssd1306_show_buffer(&screen);
+}
+
+
 /// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
 /// the connected screen, and also pushes it onto an output Queue for debugging purposes.
 /// @param arg The input/output queues.
-void task_canny_and_disp(void* arg)
+void __attribute__((always_inline)) task_canny_and_disp(void* arg)
 {
     const TickType_t TASK_PERIOD = 30;
     const TickType_t WAIT_PERIOD = 10;
@@ -248,6 +322,16 @@ void task_canny_and_disp(void* arg)
 
     cv::Mat working_frame;
 
+    // Init screen
+    constexpr uint8_t SCREEN_WIDTH = 128;
+    constexpr uint8_t SCREEN_HEIGHT = 64;
+
+    SSD1306_t screen; // The screen device struct.
+    i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
+    ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    uint8_t bmask[SCREEN_WIDTH / 8 * SCREEN_HEIGHT];
+
     while (true)
     {
         if (0 == in_q->size())
@@ -259,8 +343,20 @@ void task_canny_and_disp(void* arg)
         // Get the canny of the current frame.
         in_q->top(working_frame);
         cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652GRAY);
-        cv::Canny(working_frame, working_frame, 50, 150);
 
+        cv::Mat screen_frame(SCREEN_HEIGHT, SCREEN_WIDTH, CV_8U);
+        cv::resize(working_frame, screen_frame, screen_frame.size(), 0, 0, cv::INTER_CUBIC);
+        cv::blur(screen_frame, screen_frame, cv::Size(3, 3));
+        int lowThresh = 80;
+        int kernSize = 3;
+        cv::Canny(screen_frame, screen_frame, lowThresh, 4 * lowThresh, kernSize);
+
+        // Write it to the display.
+        ssd1306_clear_screen(&screen, false);
+        write_bin_mat(screen, screen_frame);
+
+        ESP_LOGI(TAG, "Wrote to the screen");
+	    vTaskDelay(3000 / portTICK_PERIOD_MS);
 
         if (max_out_size > out_q->size())
         {
@@ -276,25 +372,21 @@ void app_main(void)
 {
     config_cam();
 
-    // Setup the task which gets frames from the camera.
-    ThreadSafeQueue<cv::Mat> raw_frame_queue;
-    TaskParameters get_frames_params = {nullptr, &raw_frame_queue, 1};
-    xTaskCreate(task_get_img_matrix, "get_img_matrix", 4096, &get_frames_params, 0, nullptr);
-
     // Setup the canny thread.
+    ThreadSafeQueue<cv::Mat> raw_frame_queue;
     ThreadSafeQueue<cv::Mat> canny_queue;
-    TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
-    xTaskCreate(task_canny_and_disp, "canny_and_disp", 4096, &task_canny_and_disp_params, 0, nullptr);
 
+    // Setup the task which gets frames from the camera.
+    TaskParameters get_frames_params = {nullptr, &raw_frame_queue, 1};
+    xTaskCreate(task_get_img_matrix, "get_img_matrix", 4096, &get_frames_params, 1, nullptr);
+
+/*
     // Setup the task which sends frames through the serial port.
     TaskParameters send_serial = {&canny_queue, nullptr, 0};
-    xTaskCreate(task_img_usb, "img_usb", 4096, &send_serial, 0, nullptr);
-
-    while (true)
-    {
-        vTaskDelay(100);
-    }
-
-    esp_camera_deinit();
+    xTaskCreate(task_img_usb, "img_usb", 4096, &send_serial, 1, nullptr);
+*/
+    // Start the canny thread on the main processor.
+    TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
+    task_canny_and_disp(&task_canny_and_disp_params);
 
 }

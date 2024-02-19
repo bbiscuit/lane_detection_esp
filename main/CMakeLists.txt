@@ -7,6 +7,7 @@ idf_component_register(
             opencv/
         REQUIRES
             esp32-camera
+            ssd1306
             spiffs
 )
             
