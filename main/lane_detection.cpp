@@ -158,6 +158,7 @@ void canny_and_disp(void* arg)
 }
 
 
+/// @brief The entry-point.
 void app_main(void)
 {
     lane_detect::config_cam();
