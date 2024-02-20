@@ -1,6 +1,7 @@
 idf_component_register(
         SRCS
             lane_detection.cpp
+            camera_task.cpp
             
         INCLUDE_DIRS
             .
