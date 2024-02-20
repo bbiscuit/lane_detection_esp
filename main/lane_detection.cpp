@@ -57,9 +57,6 @@
 #define PCLK_GPIO_NUM     22
 
 
-typedef unsigned char byte_t;
-
-
 static char TAG[]="lane_detection";
 
 
@@ -311,7 +308,7 @@ void app_main(void)
 {
     config_cam();
 
-    // Setup the canny thread.
+    // Setup the IT-Queues.
     ThreadSafeQueue<cv::Mat> raw_frame_queue;
     ThreadSafeQueue<cv::Mat> canny_queue;
 
@@ -319,11 +316,6 @@ void app_main(void)
     TaskParameters get_frames_params = {nullptr, &raw_frame_queue, 1};
     xTaskCreate(task_get_img_matrix, "get_img_matrix", 4096, &get_frames_params, 1, nullptr);
 
-/*
-    // Setup the task which sends frames through the serial port.
-    TaskParameters send_serial = {&canny_queue, nullptr, 0};
-    xTaskCreate(task_img_usb, "img_usb", 4096, &send_serial, 1, nullptr);
-*/
     // Start the canny thread on the main processor.
     TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
     canny_and_disp(&task_canny_and_disp_params);
