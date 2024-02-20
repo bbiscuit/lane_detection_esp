@@ -79,6 +79,9 @@ void send_frame(const cv::Mat& frame)
 }
 
 
+/// @brief Writes a binary matrix to a provided LCD screen.
+/// @param screen The LCD screen to write to.
+/// @param bin_mat The binary matrix to write.
 void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
 {
     for (uint8_t row = 0; row < bin_mat.rows; row++)
