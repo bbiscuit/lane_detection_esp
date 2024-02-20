@@ -47,6 +47,8 @@ void app_main(void);
 }
 
 
+/// @brief Sends a frame over the serial port for the purposes of testing.
+/// @param frame The OpenCV matrix to send.
 void send_frame(const cv::Mat& frame)
 {
     // Begin transmission
@@ -74,37 +76,6 @@ void send_frame(const cv::Mat& frame)
     // End transmission and flush
     printf("E\n");
     fflush(stdout);
-}
-
-
-/// @brief An unending task to get frames from the camera as
-/// OpenCV matrices.
-void task_img_usb(void* arg)
-{
-    const TickType_t TASK_PERIOD = 30;
-    const TickType_t WAIT_PERIOD = 10;
-
-    // Break-out params.
-    lane_detect::TaskParameters* args = static_cast<lane_detect::TaskParameters*>(arg);
-    ThreadSafeQueue<cv::Mat>* in_q = args->in;
-
-    cv::Mat frame;
-
-    while (true)
-    {
-        // If there are no frames to send, don't send.
-        if (0 == in_q->size())
-        {
-            vTaskDelay(WAIT_PERIOD);
-            continue;
-        }
-
-        in_q->top(frame);
-        //Mat frame = get_frame();
-        send_frame(frame);
-
-        vTaskDelay(TASK_PERIOD /*- elapsed_ticks */);
-    }
 }
 
 
