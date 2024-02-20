@@ -140,6 +140,7 @@ void canny_and_disp(void* arg)
         int lowThresh = 80;
         int kernSize = 3;
         cv::Canny(working_frame, working_frame, lowThresh, 4 * lowThresh, kernSize);
+        send_frame(working_frame);
 
         // Write it to the display.
         write_bin_mat(screen, working_frame);
