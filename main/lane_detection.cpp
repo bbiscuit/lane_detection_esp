@@ -88,10 +88,8 @@ void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
     {
         for (uint8_t col = 0; col < bin_mat.cols; col++)
         {
-            if (0 != bin_mat.at<uint8_t>(row, col))
-            {
-                _ssd1306_pixel(&screen, col, row, false);
-            }
+            bool invert = (0 == bin_mat.at<uint8_t>(row, col));
+            _ssd1306_pixel(&screen, col, row, invert);
         }
     }
     ssd1306_show_buffer(&screen);
@@ -144,18 +142,15 @@ void canny_and_disp(void* arg)
         cv::Canny(working_frame, working_frame, lowThresh, 4 * lowThresh, kernSize);
 
         // Write it to the display.
-        ssd1306_clear_screen(&screen, false);
         write_bin_mat(screen, working_frame);
 
         ESP_LOGI(TAG, "Wrote to the screen");
-	    vTaskDelay(3000 / portTICK_PERIOD_MS);
+        vTaskDelay(1);
 
         if (max_out_size > out_q->size())
         {
             out_q->push(working_frame);
         }
-
-        vTaskDelay(TASK_PERIOD);
     }
 }
 
