@@ -24,12 +24,13 @@ def read_frame(s: serial.Serial):
     rows = int(s.read(size=4).decode(), base=16)
     cols = int(s.read(size=4).decode(), base=16)
     channels = int(s.read(size=4).decode(), base=16)
+    print(f'Found mat of size {rows}x{cols}x{channels}')
 
     # Read the following data as a matrix of integers with the rows/cols vals.
     mat_data = np.zeros((rows, cols, channels), dtype=np.uint8)
     pre_read = time.time()
-    for row in range(0, cols):
-        for col in range(0, rows):
+    for row in range(0, rows):
+        for col in range(0, cols):
             for channel in range(0, channels):
                 mat_data[row, col, channel] = int(s.read(size=2).decode(), base=16)
     post_read = time.time()
@@ -56,8 +57,8 @@ def main_loop(s: serial.Serial, thresh_color: dict):
             frame = frame_queue.get()
 
             # Display the image, upped to three channels so that it may be displayed.
-            frame_disp = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
-            frame_disp = cv2.resize(frame_disp, (300, 300))
+            #frame_disp = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
+            frame_disp = cv2.resize(frame, (300, 300))
             cv2.imshow('Frame', frame_disp)
 
             # Display the frame thresholded according to the thresh_color parameter.
@@ -90,7 +91,7 @@ def setup_color_thresh_window(window_name: str, thresh_color: dict):
 def main():
     """The main subroutine."""
     s = serial.Serial()
-    s.port = 'COM4'
+    s.port = input('What port? >> ')
     s.baudrate = 115200
     s.bytesize = 8
     s.stopbits = 1

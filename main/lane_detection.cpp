@@ -88,10 +88,8 @@ void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
     {
         for (uint8_t col = 0; col < bin_mat.cols; col++)
         {
-            if (0 != bin_mat.at<uint8_t>(row, col))
-            {
-                _ssd1306_pixel(&screen, col, row, false);
-            }
+            bool invert = (0 == bin_mat.at<uint8_t>(row, col));
+            _ssd1306_pixel(&screen, col, row, invert);
         }
     }
     ssd1306_show_buffer(&screen);
@@ -130,30 +128,30 @@ void canny_and_disp(void* arg)
             continue;
         }
 
-        // Get the canny of the current frame.
+        // Crop the current frame so that it will fit on the screen.
         in_q->top(working_frame);
-        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652GRAY);
+        working_frame = working_frame(cv::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
-        cv::Mat screen_frame(SCREEN_HEIGHT, SCREEN_WIDTH, CV_8U);
-        cv::resize(working_frame, screen_frame, screen_frame.size(), 0, 0, cv::INTER_CUBIC);
-        cv::blur(screen_frame, screen_frame, cv::Size(3, 3));
+        // Prepare the image for Canny
+        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652GRAY);
+        cv::blur(working_frame, working_frame, cv::Size(3, 3));
+
+        // Run Canny on the image.
         int lowThresh = 80;
         int kernSize = 3;
-        cv::Canny(screen_frame, screen_frame, lowThresh, 4 * lowThresh, kernSize);
+        cv::Canny(working_frame, working_frame, lowThresh, 4 * lowThresh, kernSize);
+        send_frame(working_frame);
 
         // Write it to the display.
-        ssd1306_clear_screen(&screen, false);
-        write_bin_mat(screen, screen_frame);
+        write_bin_mat(screen, working_frame);
 
         ESP_LOGI(TAG, "Wrote to the screen");
-	    vTaskDelay(3000 / portTICK_PERIOD_MS);
+        vTaskDelay(1);
 
         if (max_out_size > out_q->size())
         {
             out_q->push(working_frame);
         }
-
-        vTaskDelay(TASK_PERIOD);
     }
 }
 
