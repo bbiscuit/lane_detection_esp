@@ -212,12 +212,10 @@ void task_img_usb(void* arg)
             continue;
         }
 
-        auto start_tick = xTaskGetTickCount();
         in_q->top(frame);
         //Mat frame = get_frame();
         send_frame(frame);
 
-        //auto elapsed_ticks = xTaskGetTickCount() - start_tick;
         vTaskDelay(TASK_PERIOD /*- elapsed_ticks */);
     }
 }
@@ -309,7 +307,7 @@ void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
 /// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
 /// the connected screen, and also pushes it onto an output Queue for debugging purposes.
 /// @param arg The input/output queues.
-void __attribute__((always_inline)) task_canny_and_disp(void* arg)
+void canny_and_disp(void* arg)
 {
     const TickType_t TASK_PERIOD = 30;
     const TickType_t WAIT_PERIOD = 10;
@@ -329,8 +327,6 @@ void __attribute__((always_inline)) task_canny_and_disp(void* arg)
     SSD1306_t screen; // The screen device struct.
     i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
     ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    uint8_t bmask[SCREEN_WIDTH / 8 * SCREEN_HEIGHT];
 
     while (true)
     {
@@ -387,6 +383,6 @@ void app_main(void)
 */
     // Start the canny thread on the main processor.
     TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
-    task_canny_and_disp(&task_canny_and_disp_params);
+    canny_and_disp(&task_canny_and_disp_params);
 
 }
