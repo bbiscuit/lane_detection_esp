@@ -57,27 +57,7 @@
 #define PCLK_GPIO_NUM     22
 
 
-typedef unsigned char byte_t;
-
-
 static char TAG[]="lane_detection";
-
-
-uint8_t batman[] = {
-		0b11111111, 0b11111111, 0b11111111, 0b11111111,
-		0b11111111, 0b10011111, 0b11111001, 0b11111111,
-		0b11111110, 0b00111110, 0b01111100, 0b01111111,
-		0b11111000, 0b00111100, 0b00111100, 0b00011111,
-		0b11110000, 0b00011100, 0b00111000, 0b00001111,
-		0b11110000, 0b00000000, 0b00000000, 0b00001111,
-		0b11100000, 0b00000000, 0b00000000, 0b00000111,
-		0b11100000, 0b00000000, 0b00000000, 0b00000111,
-		0b11110000, 0b00000000, 0b00000000, 0b00001111,
-		0b11110000, 0b11000100, 0b00100011, 0b00001111,
-		0b11111001, 0b11111110, 0b01111111, 0b10011111,
-		0b11111100, 0b11111110, 0b01111111, 0b00111111,
-		0b11111111, 0b11111111, 0b11111111, 0b11111111
-};
 
 
 // The parameters which are sent to a task.
@@ -248,46 +228,6 @@ void task_get_img_matrix(void* arg)
 }
 
 
-/// @brief Takes a binary opencv matrix (only 0's and f's) and converts it into a bitmask, for
-/// efficient display on an LCD screen which does not support color.
-/// @param bin_mat The binary OpenCV matrix (only 0's and f's). It's assumed that this matrix has
-/// the same dimensions as the screen to which this bitmask will be written.
-/// @param out The buffer in which the bitmask is stored. This function ASSUMES that this buffer is
-/// correctly sized. This theoretically ought to be the number of columns on the screen divided by
-/// 8, multiplied by the number of rows on the screen. So, for a 128x64 LCD, for example, this
-/// should be of size 128.
-void mat_to_bmask(const cv::Mat& bin_mat, uint8_t* out)
-{
-    uint8_t bm_index = 0;
-
-    for (uint8_t row = 0; row < bin_mat.rows; row++)
-    {
-        uint8_t working_val = 0x0;
-
-        for (uint8_t col = 0; col < bin_mat.cols; col++)
-        {
-            // Setup the working and shift value which will be used to assign in case of a one.
-            const uint8_t bit_num = 7 - col % 8; // This makes col 0 be MSB, while col 7 is LSB
-
-            // Set the correct bit in the working val, and write to the bitmask.
-            const uint8_t val = bin_mat.at<uint8_t>(row, col);
-            if (0 != val)
-            {
-                working_val = (working_val | (0x1 << bit_num));
-                out[bm_index] = working_val;
-            }
-
-            // Update the working value according to the current iteration.
-            if (0 == bit_num)
-            {
-                working_val = 0x0;
-                bm_index++;
-            }
-        }
-    }
-}
-
-
 void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
 {
     for (uint8_t row = 0; row < bin_mat.rows; row++)
@@ -368,7 +308,7 @@ void app_main(void)
 {
     config_cam();
 
-    // Setup the canny thread.
+    // Setup the IT-Queues.
     ThreadSafeQueue<cv::Mat> raw_frame_queue;
     ThreadSafeQueue<cv::Mat> canny_queue;
 
@@ -376,11 +316,6 @@ void app_main(void)
     TaskParameters get_frames_params = {nullptr, &raw_frame_queue, 1};
     xTaskCreate(task_get_img_matrix, "get_img_matrix", 4096, &get_frames_params, 1, nullptr);
 
-/*
-    // Setup the task which sends frames through the serial port.
-    TaskParameters send_serial = {&canny_queue, nullptr, 0};
-    xTaskCreate(task_img_usb, "img_usb", 4096, &send_serial, 1, nullptr);
-*/
     // Start the canny thread on the main processor.
     TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
     canny_and_disp(&task_canny_and_disp_params);
