@@ -1,6 +1,6 @@
 idf_component_register(
         SRCS
-            hello_opencv.cpp
+            lane_detection.cpp
             
         INCLUDE_DIRS
             .

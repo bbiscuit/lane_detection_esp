@@ -60,7 +60,7 @@
 typedef unsigned char byte_t;
 
 
-static char TAG[]="hello_opencv";
+static char TAG[]="lane_detection";
 
 
 uint8_t batman[] = {
