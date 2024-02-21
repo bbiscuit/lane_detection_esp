@@ -115,7 +115,6 @@ def main():
         "value": 0
     }
 
-    setup_color_thresh_window("Thresholding color", thresh_color)
     main_loop(s, thresh_color)
     s.close()
 
