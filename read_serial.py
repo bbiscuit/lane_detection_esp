@@ -29,10 +29,17 @@ def read_frame(s: serial.Serial):
     # Read the following data as a matrix of integers with the rows/cols vals.
     mat_data = np.zeros((rows, cols, channels), dtype=np.uint8)
     pre_read = time.time()
+
     for row in range(0, rows):
         for col in range(0, cols):
             for channel in range(0, channels):
-                mat_data[row, col, channel] = int(s.read(size=2).decode(), base=16)
+                try:
+                    data_bytes = s.read(size=2)
+                except Exception:
+                    return np.zeros((rows, cols, channels), dtype=np.uint8)
+
+                mat_data[row, col, channel] = int(data_bytes.decode(), base=16)
+
     post_read = time.time()
     print(f'time: {post_read - pre_read}')
 
