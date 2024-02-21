@@ -35,6 +35,7 @@
 #include "thread_safe_queue.h"
 #include "common.h"
 #include "camera_task.h"
+#include "debugging.h"
 
 
 static char TAG[]="lane_detection";
@@ -44,38 +45,6 @@ static char TAG[]="lane_detection";
 // even though C++ mangles the function name.
 extern "C" {
 void app_main(void);
-}
-
-
-/// @brief Sends a frame over the serial port for the purposes of testing.
-/// @param frame The OpenCV matrix to send.
-void send_frame(const cv::Mat& frame)
-{
-    // Begin transmission
-    printf("START"); // Start of transmission
-
-    // Transmit the number of rows and columns
-    const int channels = frame.channels();
-
-    printf("%04x", frame.rows);
-    printf("%04x", frame.cols);
-    printf("%04x", channels);
-
-    // Transmit the data of the frame.
-    for (int row = 0; row < frame.rows; row++) 
-    {
-        for (int col = 0; col < frame.cols; col++)
-        {
-            for (int channel = 0; channel < channels; channel++)
-            {
-                printf("%02x", frame.at<uint8_t>(row, col, channel));
-            }
-        }
-    }
-
-    // End transmission and flush
-    printf("E\n");
-    fflush(stdout);
 }
 
 
@@ -140,7 +109,7 @@ void canny_and_disp(void* arg)
         int lowThresh = 80;
         int kernSize = 3;
         cv::Canny(working_frame, working_frame, lowThresh, 4 * lowThresh, kernSize);
-        send_frame(working_frame);
+        lane_detect::debug::send_matrix(working_frame);
 
         // Write it to the display.
         write_bin_mat(screen, working_frame);
