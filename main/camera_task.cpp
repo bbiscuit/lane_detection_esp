@@ -103,6 +103,26 @@ namespace lane_detect
         return result;
     }
 
+    cv::Mat get_frame(camera_fb_t* fb)
+    {
+        // If a previous picture has been taken, give the frame-buffer back.
+        if (fb != nullptr)
+        {
+            esp_camera_fb_return(fb);
+        }
+
+        // Take the picture.
+        fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGE(TAG, "Camera capture failed");
+            return cv::Mat();
+        }
+
+        // Build the OpenCV matrix.
+        // CV_8UC2 is two-channel color, with 8-bit channels.
+        return cv::Mat(fb->height, fb->width, CV_8UC2, fb->buf);
+    }
+
     void camera_task(void* arg)
     {
         const TickType_t TASK_PERIOD = 30;
