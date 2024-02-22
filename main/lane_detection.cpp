@@ -125,6 +125,15 @@ void canny_and_disp(void* arg)
 }
 
 
+/// @brief Runs thresholding on the frame using predetermined values generated from the debugging
+/// tool.
+/// @param in_queue The Queue from which the frames come. 
+void threshold_and_disp(ThreadSafeQueue<cv::Mat>& in_queue)
+{
+    
+}
+
+
 /// @brief The entry-point.
 void app_main(void)
 {
