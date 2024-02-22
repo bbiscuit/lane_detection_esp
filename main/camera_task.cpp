@@ -83,25 +83,6 @@ namespace lane_detect
 
     }
 
-    /// @brief Gets a frame from the camera
-    /// @return The camera frame, as an OpenCV matrix.
-    cv::Mat get_frame()
-    {
-        // Take a picture from the camera.
-        camera_fb_t *fb = esp_camera_fb_get();
-        if (!fb) {
-            ESP_LOGE(TAG, "Camera capture failed");
-            return cv::Mat();
-        }
-        
-        // Build the OpenCV matrix.
-        // CV_8UC2 is two-channel color, with 8-bit 
-        cv::Mat result(fb->height, fb->width, CV_8UC2, fb->buf);
-
-        // Cleanup and return.
-        esp_camera_fb_return(fb);
-        return result;
-    }
 
     cv::Mat get_frame(camera_fb_t* fb)
     {
