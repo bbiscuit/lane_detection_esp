@@ -152,7 +152,9 @@ void threshold_and_disp(ThreadSafeQueue<cv::Mat>& in_queue)
 
         in_queue.top(working_frame);
 
-        // Do the thresholding
+        // Do the thresholding.
+        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652BGR);
+        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR2HSV);
 
         // Write to the screen.
         write_bin_mat(screen, working_frame);
