@@ -130,7 +130,34 @@ void canny_and_disp(void* arg)
 /// @param in_queue The Queue from which the frames come. 
 void threshold_and_disp(ThreadSafeQueue<cv::Mat>& in_queue)
 {
-    
+    constexpr uint8_t SCREEN_WIDTH = 128; // The width, in pixels, of the LCD screen.
+    constexpr uint8_t SCREEN_HEIGHT = 64; // The height, in pixels, of the LCD screen.
+    cv::Mat working_frame; // The mat into which the frame will be loaded from the camera.
+
+    // Initialize the LCD.
+    SSD1306_t screen; // The screen device struct.
+    i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
+    ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+
+    while (true)
+    {
+        // If the queue is empty, wait a little bit and try again.
+        if (0 == in_queue.size())
+        {
+            constexpr TickType_t WAIT_PERIOD = 1;
+            vTaskDelay(WAIT_PERIOD); // So that we're not stuck here.
+            continue;
+        }
+
+        in_queue.top(working_frame);
+
+        // Do the thresholding
+
+        // Write to the screen.
+        write_bin_mat(screen, working_frame);
+        vTaskDelay(1); // So that we don't hang.
+    }
 }
 
 
