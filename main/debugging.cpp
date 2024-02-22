@@ -2,6 +2,10 @@
 
 #include <stdio.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/portmacro.h"
+
 namespace lane_detect::debug
 {
 
@@ -30,6 +34,7 @@ namespace lane_detect::debug
                     printf("%02x", frame.at<uint8_t>(row, col, channel));
                 }
             }
+            vTaskDelay(1); // To avoid the watchdog on especially large matrices.
         }
 
         // End transmission and flush

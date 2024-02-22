@@ -89,6 +89,7 @@ inline void canny_and_disp()
             vTaskDelay(1);
             continue;
         }
+        lane_detect::debug::send_matrix(working_frame);
 
         working_frame = working_frame(cv::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
@@ -100,7 +101,6 @@ inline void canny_and_disp()
         int lowThresh = 80;
         int kernSize = 3;
         cv::Canny(working_frame, working_frame, lowThresh, 4 * lowThresh, kernSize);
-        lane_detect::debug::send_matrix(working_frame);
 
         // Write it to the display.
         write_bin_mat(screen, working_frame);
