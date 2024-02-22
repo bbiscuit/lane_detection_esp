@@ -84,16 +84,17 @@ namespace lane_detect
     }
 
 
-    cv::Mat get_frame(camera_fb_t* fb)
+    cv::Mat get_frame(camera_fb_t** fb_p)
     {
         // If a previous picture has been taken, give the frame-buffer back.
-        if (fb != nullptr)
+        if (*fb_p != nullptr)
         {
-            esp_camera_fb_return(fb);
+            esp_camera_fb_return(*fb_p);
         }
 
         // Take the picture.
-        fb = esp_camera_fb_get();
+        *fb_p = esp_camera_fb_get();
+        auto fb = *fb_p;
         if (!fb) {
             ESP_LOGE(TAG, "Camera capture failed");
             return cv::Mat();

@@ -24,5 +24,5 @@ namespace lane_detect
     /// goes out of scope.
     /// @param mat The matrix into which the frame is read. Note that the data from `fb` was not
     /// copied; just the reference. So if fb is freed this Mat is invalidated.
-    cv::Mat get_frame(camera_fb_t* fb);
+    cv::Mat get_frame(camera_fb_t** fb);
 }

@@ -83,7 +83,13 @@ inline void canny_and_disp()
     while (true)
     {
         // Crop the current frame so that it will fit on the screen.
-        cv::Mat working_frame = lane_detect::get_frame(fb);
+        cv::Mat working_frame = lane_detect::get_frame(&fb);
+        if (working_frame.size[0] == 0)
+        {
+            vTaskDelay(1);
+            continue;
+        }
+
         working_frame = working_frame(cv::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
         // Prepare the image for Canny
