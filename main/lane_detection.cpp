@@ -72,14 +72,13 @@ void canny_and_disp(void* arg)
 {
     const TickType_t TASK_PERIOD = 30;
     const TickType_t WAIT_PERIOD = 10;
+    camera_fb_t* fb = nullptr;
 
     // Extract params
     lane_detect::TaskParameters* args = static_cast<lane_detect::TaskParameters*>(arg);
     ThreadSafeQueue<cv::Mat>* in_q = args->in;
     ThreadSafeQueue<cv::Mat>* out_q = args->out;
     const uint8_t max_out_size = args->max_out_size;
-
-    cv::Mat working_frame;
 
     // Init screen
     constexpr uint8_t SCREEN_WIDTH = 128;
@@ -91,14 +90,8 @@ void canny_and_disp(void* arg)
 
     while (true)
     {
-        if (0 == in_q->size())
-        {
-            vTaskDelay(WAIT_PERIOD);
-            continue;
-        }
-
         // Crop the current frame so that it will fit on the screen.
-        in_q->top(working_frame);
+        cv::Mat working_frame = lane_detect::get_frame(fb);
         working_frame = working_frame(cv::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
         // Prepare the image for Canny
@@ -136,7 +129,7 @@ void app_main(void)
 
     // Setup the task which gets frames from the camera.
     lane_detect::TaskParameters get_frames_params = {nullptr, &raw_frame_queue, 1};
-    xTaskCreate(lane_detect::camera_task, "get_img_matrix", 4096, &get_frames_params, 1, nullptr);
+    //xTaskCreate(lane_detect::camera_task, "get_img_matrix", 4096, &get_frames_params, 1, nullptr);
 
     // Start the canny thread on the main processor.
     lane_detect::TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
