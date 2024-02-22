@@ -122,30 +122,4 @@ namespace lane_detect
         // CV_8UC2 is two-channel color, with 8-bit channels.
         return cv::Mat(fb->height, fb->width, CV_8UC2, fb->buf);
     }
-
-    void camera_task(void* arg)
-    {
-        const TickType_t TASK_PERIOD = 30;
-        const TickType_t WAIT_PERIOD = 10;
-
-        // Extract params
-        TaskParameters* args = static_cast<TaskParameters*>(arg);
-        ThreadSafeQueue<cv::Mat>* out_q = args->out;
-        const uint8_t max_frames = args->max_out_size;
-
-        while (true)
-        {
-            if (max_frames <= out_q->size())
-            {
-                vTaskDelay(WAIT_PERIOD);
-                out_q->pop();
-                continue;
-            }
-
-            auto frame = get_frame();
-            out_q->push(frame);
-
-            vTaskDelay(TASK_PERIOD);
-        }
-    }
 }

@@ -17,12 +17,6 @@ namespace lane_detect
     /// @brief Configures the ESP-32-CAM.
     void config_cam();
 
-    /// @brief A FreeRTOS task which fetches frames from an ESP32-CAM and outputs them as OpenCV
-    /// frames.
-    /// @param arg Should be of type "TaskParameters." The input queue is not used in this task;
-    /// only the output and the max output num.
-    void camera_task(void* arg);
-
 
     /// @brief Gets a frame from the ESP-32 camera and interprets it as an OpenCV matrix.
     /// @param fb The frame buffer. If this is not nullptr, this will be freed back to the ESP-32
