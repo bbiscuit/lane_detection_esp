@@ -68,18 +68,9 @@ void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
 /// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
 /// the connected screen, and also pushes it onto an output Queue for debugging purposes.
 /// @param arg The input/output queues.
-void canny_and_disp(void* arg)
+inline void canny_and_disp()
 {
-    const TickType_t TASK_PERIOD = 30;
-    const TickType_t WAIT_PERIOD = 10;
-
-    // Extract params
-    lane_detect::TaskParameters* args = static_cast<lane_detect::TaskParameters*>(arg);
-    ThreadSafeQueue<cv::Mat>* in_q = args->in;
-    ThreadSafeQueue<cv::Mat>* out_q = args->out;
-    const uint8_t max_out_size = args->max_out_size;
-
-    cv::Mat working_frame;
+    camera_fb_t* fb = nullptr;
 
     // Init screen
     constexpr uint8_t SCREEN_WIDTH = 128;
@@ -91,14 +82,14 @@ void canny_and_disp(void* arg)
 
     while (true)
     {
-        if (0 == in_q->size())
+        // Crop the current frame so that it will fit on the screen.
+        cv::Mat working_frame = lane_detect::get_frame(&fb);
+        if (working_frame.size[0] == 0)
         {
-            vTaskDelay(WAIT_PERIOD);
+            vTaskDelay(1);
             continue;
         }
 
-        // Crop the current frame so that it will fit on the screen.
-        in_q->top(working_frame);
         working_frame = working_frame(cv::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
         // Prepare the image for Canny
@@ -113,14 +104,7 @@ void canny_and_disp(void* arg)
 
         // Write it to the display.
         write_bin_mat(screen, working_frame);
-
-        ESP_LOGI(TAG, "Wrote to the screen");
         vTaskDelay(1);
-
-        if (max_out_size > out_q->size())
-        {
-            out_q->push(working_frame);
-        }
     }
 }
 
@@ -130,16 +114,5 @@ void app_main(void)
 {
     lane_detect::config_cam();
 
-    // Setup the IT-Queues.
-    ThreadSafeQueue<cv::Mat> raw_frame_queue;
-    ThreadSafeQueue<cv::Mat> canny_queue;
-
-    // Setup the task which gets frames from the camera.
-    lane_detect::TaskParameters get_frames_params = {nullptr, &raw_frame_queue, 1};
-    xTaskCreate(lane_detect::camera_task, "get_img_matrix", 4096, &get_frames_params, 1, nullptr);
-
-    // Start the canny thread on the main processor.
-    lane_detect::TaskParameters task_canny_and_disp_params = {&raw_frame_queue, &canny_queue, 1};
-    canny_and_disp(&task_canny_and_disp_params);
-
+    canny_and_disp();
 }

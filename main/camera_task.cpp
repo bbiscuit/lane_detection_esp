@@ -83,49 +83,25 @@ namespace lane_detect
 
     }
 
-    /// @brief Gets a frame from the camera
-    /// @return The camera frame, as an OpenCV matrix.
-    cv::Mat get_frame()
+
+    cv::Mat get_frame(camera_fb_t** fb_p)
     {
-        // Take a picture from the camera.
-        camera_fb_t *fb = esp_camera_fb_get();
+        // If a previous picture has been taken, give the frame-buffer back.
+        if (*fb_p != nullptr)
+        {
+            esp_camera_fb_return(*fb_p);
+        }
+
+        // Take the picture.
+        *fb_p = esp_camera_fb_get();
+        auto fb = *fb_p;
         if (!fb) {
             ESP_LOGE(TAG, "Camera capture failed");
             return cv::Mat();
         }
-        
+
         // Build the OpenCV matrix.
-        // CV_8UC2 is two-channel color, with 8-bit 
-        cv::Mat result(fb->height, fb->width, CV_8UC2, fb->buf);
-
-        // Cleanup and return.
-        esp_camera_fb_return(fb);
-        return result;
-    }
-
-    void camera_task(void* arg)
-    {
-        const TickType_t TASK_PERIOD = 30;
-        const TickType_t WAIT_PERIOD = 10;
-
-        // Extract params
-        TaskParameters* args = static_cast<TaskParameters*>(arg);
-        ThreadSafeQueue<cv::Mat>* out_q = args->out;
-        const uint8_t max_frames = args->max_out_size;
-
-        while (true)
-        {
-            if (max_frames <= out_q->size())
-            {
-                vTaskDelay(WAIT_PERIOD);
-                out_q->pop();
-                continue;
-            }
-
-            auto frame = get_frame();
-            out_q->push(frame);
-
-            vTaskDelay(TASK_PERIOD);
-        }
+        // CV_8UC2 is two-channel color, with 8-bit channels.
+        return cv::Mat(fb->height, fb->width, CV_8UC2, fb->buf);
     }
 }
