@@ -5,9 +5,12 @@ import time
 import threading
 import queue
 import functools
+import json
+import sys
 
 def disp_threshold_frame(frame: cv2.Mat, thresh_color: dict, win_name: str):
     """"""
+
 
 def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
@@ -100,10 +103,19 @@ def setup_color_thresh_window(window_name: str, thresh_color: dict):
     cv2.createTrackbar("Value", window_name, thresh_color["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color, dim="value"))
 
 
+def load_settings(filename: str) -> dict:
+    """Loads settings for the app from the given json file."""
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+
 def main():
     """The main subroutine."""
+
+    settings = load_settings('debugger_settings.json')
+
     s = serial.Serial()
-    s.port = input('What port? >> ')
+    s.port = settings['default_com_port']
     s.baudrate = 115200
     s.bytesize = 8
     s.stopbits = 1
@@ -111,6 +123,10 @@ def main():
     #s.timeout = 0.5
     s.setDTR(False)
     s.setRTS(False)
+
+    if len(sys.argv) > 1:
+        s.port = sys.argv[1]
+
     s.open()
 
     # The BGR threshold for the image.
