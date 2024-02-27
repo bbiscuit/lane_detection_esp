@@ -74,6 +74,9 @@ def main_loop(s: serial.Serial, thresh_color: dict):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
                 cv2.imshow('Pre-processed Frame', frame)
 
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                cv2.imshow('HSV', frame)
+
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
             elif 'CV_8UC1' == frame_type or 'CV_8U__' == frame_type:
