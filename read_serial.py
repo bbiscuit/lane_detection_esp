@@ -9,8 +9,9 @@ import functools
 def disp_threshold_frame(frame: cv2.Mat, thresh_color: dict, win_name: str):
     """"""
 
-def read_frame(s: serial.Serial):
-    """Reads a frame from the serial port. This will be of size 96x96x2, and must be processed into BGR before reading."""
+def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
+    """Reads a frame from the serial port. Returned with it is the type of the frame,
+    so that it can be intelligently processed."""
     # Busy-wait until we recieve the start bit (1)
     while True:
         if s.read() == b'S':
@@ -24,7 +25,9 @@ def read_frame(s: serial.Serial):
     rows = int(s.read(size=4).decode(), base=16)
     cols = int(s.read(size=4).decode(), base=16)
     channels = int(s.read(size=4).decode(), base=16)
-    print(f'Found mat of size {rows}x{cols}x{channels}')
+    type = s.read(size=7).decode()
+
+    print(f'Found mat of size {rows}x{cols}x{channels} of type {type}')
 
     # Read the following data as a matrix of integers with the rows/cols vals.
     mat_data = np.zeros((rows, cols, channels), dtype=np.uint8)
@@ -44,7 +47,7 @@ def read_frame(s: serial.Serial):
     print(f'time: {post_read - pre_read}')
 
     # Return the BGR image.
-    return mat_data
+    return (mat_data, type)
 
 
 def main_loop(s: serial.Serial, thresh_color: dict):
@@ -61,14 +64,17 @@ def main_loop(s: serial.Serial, thresh_color: dict):
     while True:
         # If the reader thread is complete, show the frame and restart the thread.
         if not reader_thread.is_alive():
-            frame = frame_queue.get()
+            frame, frame_type = frame_queue.get()
 
-            # Display the image, upped to three channels so that it may be displayed.
-            frame_disp = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
-            cv2.imshow('Frame', frame_disp)
+            # If the received thread was of type CV_8UC2, up it to eight-bit color and display.
+            if 'CV_8UC2' == frame_type:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
+                cv2.imshow('Pre-processed Frame', frame)
 
-            # Display the frame thresholded according to the thresh_color parameter.
-            #frame_mask = cv2.inRange()
+            # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
+            # without any changes.
+            elif 'CV_8UC1' == frame_type or 'CV_8U__' == frame_type:
+                cv2.imshow('Mask', frame)
 
             # Respawn the reader thread (so that the window can still read updates)
             reader_thread = threading.Thread(target=frame_reader)
