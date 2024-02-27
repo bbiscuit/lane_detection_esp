@@ -21,6 +21,24 @@ namespace lane_detect::debug
         printf("%04x", frame.cols);
         printf("%04x", frame.channels());
 
+        // Transmit what type of frame this is, of the common ones used in this app.
+        const auto type = frame.type();
+
+        // RGB585
+        if (CV_8UC2 == type)
+        {
+            printf("CV_8UC2");
+        }
+        // Binary-mask
+        else if (CV_8UC1 == type)
+        {
+            printf("CV_8UC1");
+        }
+        else if (CV_8U == type)
+        {
+            printf("CV_8U__");
+        }
+
         // Transmit the data of the frame.
         for (int row = 0; row < frame.rows; row++) 
         {
