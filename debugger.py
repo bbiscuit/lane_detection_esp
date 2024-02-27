@@ -5,6 +5,7 @@ import time
 import threading
 import queue
 import functools
+import json
 
 def disp_threshold_frame(frame: cv2.Mat, thresh_color: dict, win_name: str):
     """"""
@@ -99,11 +100,18 @@ def setup_color_thresh_window(window_name: str, thresh_color: dict):
     cv2.createTrackbar("Saturation", window_name, thresh_color["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color, dim="saturation"))
     cv2.createTrackbar("Value", window_name, thresh_color["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color, dim="value"))
 
+def load_settings(filename: str) -> dict:
+    """Loads settings for the app from the given json file."""
+    with open(filename, 'r') as f:
+        return json.load(f)
 
 def main():
     """The main subroutine."""
+
+    settings = load_settings('debugger_settings.json')
+
     s = serial.Serial()
-    s.port = input('What port? >> ')
+    s.port = settings['default_com_port']
     s.baudrate = 115200
     s.bytesize = 8
     s.stopbits = 1
