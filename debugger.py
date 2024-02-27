@@ -8,8 +8,20 @@ import functools
 import json
 import sys
 
-def disp_threshold_frame(frame: cv2.Mat, thresh_color: dict, win_name: str):
+thresh_frame = None
+
+def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_name: str):
     """"""
+    global thresh_frame
+
+    if thresh_frame is not None:
+        frame = cv2.inRange(
+            thresh_frame, 
+            (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value']),
+            (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
+        )
+
+        cv2.imshow(win_name, frame)
 
 
 def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
@@ -53,7 +65,10 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     return (mat_data, type)
 
 
-def main_loop(s: serial.Serial, thresh_color: dict):
+def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
+
+    global thresh_frame
+
     print("Starting main loop...")
     # Create the thread for reading the frame.
     frame_queue = queue.Queue()
@@ -77,6 +92,9 @@ def main_loop(s: serial.Serial, thresh_color: dict):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 cv2.imshow('HSV', frame)
 
+                thresh_frame = frame
+                disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
+
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
             elif 'CV_8UC1' == frame_type or 'CV_8U__' == frame_type:
@@ -94,16 +112,20 @@ def main_loop(s: serial.Serial, thresh_color: dict):
             break
 
 
-def setup_color_thresh_window(window_name: str, thresh_color: dict):
+def setup_color_thresh_window(window_name: str, thresh_color_min: dict, thresh_color_max: dict):
     """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
 
     def on_trackbar(val, color_to_update, dim):
         color_to_update[dim] = val
+        disp_threshold_frame(thresh_color_min, thresh_color_max, window_name)
 
     cv2.namedWindow(window_name)
-    cv2.createTrackbar("Hue", window_name, thresh_color["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color, dim="hue"))
-    cv2.createTrackbar("Saturation", window_name, thresh_color["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color, dim="saturation"))
-    cv2.createTrackbar("Value", window_name, thresh_color["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color, dim="value"))
+    cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
+    cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
+    cv2.createTrackbar("Min Value", window_name, thresh_color_min["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value"))
+    cv2.createTrackbar("Max Hue", window_name, thresh_color_max["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue"))
+    cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
+    cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
 
 
 def load_settings(filename: str) -> dict:
@@ -133,13 +155,18 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
-    thresh_color = {
-        "hue": 0,
-        "saturation": 0,
-        "value": 0
-    }
+    thresh_color_min = settings['thresh_color_min']
+    thresh_color_max = settings['thresh_color_max']
 
-    main_loop(s, thresh_color)
+    setup_color_thresh_window('Thresholding', thresh_color_min, thresh_color_max)
+    main_loop(s, thresh_color_min, thresh_color_max)
+
+    # Write-back convenience values to settings.
+    settings['thresh_color_min'] = thresh_color_min
+    settings['thresh_color_max'] = thresh_color_max
+    with open('debugger_settings.json', 'w') as f:
+        json.dump(settings, f)
+
     s.close()
 
 
