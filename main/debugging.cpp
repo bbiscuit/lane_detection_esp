@@ -40,13 +40,27 @@ namespace lane_detect::debug
         }
 
         // Transmit the data of the frame.
-        for (int row = 0; row < frame.rows; row++) 
+        if (CV_8UC2 == type)
         {
-            for (int col = 0; col < frame.cols; col++)
+            for (int row = 0; row < frame.rows; row++) 
             {
-                printf("%04x", frame.at<uint16_t>(row, col));
+                for (int col = 0; col < frame.cols; col++)
+                {
+                    printf("%04x", frame.at<uint16_t>(row, col));
+                }
+                vTaskDelay(1); // To avoid the watchdog on especially large matrices.
             }
-            vTaskDelay(1); // To avoid the watchdog on especially large matrices.
+        }
+        else if (CV_8U == type || CV_8UC1 == type)
+        {
+            for (int row = 0; row < frame.rows; row++) 
+            {
+                for (int col = 0; col < frame.cols; col++)
+                {
+                    printf("%02x", frame.at<uint8_t>(row, col));
+                }
+                vTaskDelay(1); // To avoid the watchdog on especially large matrices.
+            }
         }
 
         // End transmission and flush

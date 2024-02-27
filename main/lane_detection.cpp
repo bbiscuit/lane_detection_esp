@@ -36,6 +36,7 @@
 #include "common.h"
 #include "camera_task.h"
 #include "debugging.h"
+#include "thresh.h"
 
 
 static char TAG[]="lane_detection";
@@ -111,10 +112,53 @@ inline void canny_and_disp()
 }
 
 
+/// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
+/// the connected screen, and also pushes it onto an output Queue for debugging purposes.
+/// @param arg The input/output queues.
+inline void thresh_and_disp()
+{
+    camera_fb_t* fb = nullptr;
+
+    // Init screen
+    constexpr uint8_t SCREEN_WIDTH = 128;
+    constexpr uint8_t SCREEN_HEIGHT = 64;
+
+    SSD1306_t screen; // The screen device struct.
+    i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
+    ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    while (true)
+    {
+        // Crop the current frame so that it will fit on the screen.
+        cv::Mat working_frame = lane_detect::get_frame(&fb);
+        if (working_frame.size[0] == 0)
+        {
+            vTaskDelay(1);
+            continue;
+        }
+
+        lane_detect::debug::send_matrix(working_frame);
+        //cv::resize(working_frame, working_frame, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
+
+        // Perform thresholding.
+        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652BGR);
+        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR2HSV);
+        cv::Mat thresh;
+        cv::inRange(working_frame, cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val), cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val), thresh);
+
+        lane_detect::debug::send_matrix(thresh);
+
+        // Write it to the display.
+        write_bin_mat(screen, working_frame);
+        vTaskDelay(1);
+    }
+}
+
+
 /// @brief The entry-point.
 void app_main(void)
 {
     lane_detect::config_cam();
 
-    canny_and_disp();
+    thresh_and_disp();
 }
