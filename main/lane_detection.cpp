@@ -90,8 +90,8 @@ inline void canny_and_disp()
             continue;
         }
 
-        working_frame = working_frame(cv::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
         lane_detect::debug::send_matrix(working_frame);
+        cv::resize(working_frame, working_frame, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
 
         // Prepare the image for Canny
         cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652GRAY);
