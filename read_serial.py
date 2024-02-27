@@ -64,8 +64,7 @@ def main_loop(s: serial.Serial, thresh_color: dict):
             frame = frame_queue.get()
 
             # Display the image, upped to three channels so that it may be displayed.
-            #frame_disp = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
-            frame_disp = cv2.resize(frame, (300, 300))
+            frame_disp = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
             cv2.imshow('Frame', frame_disp)
 
             # Display the frame thresholded according to the thresh_color parameter.

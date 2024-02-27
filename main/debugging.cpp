@@ -17,22 +17,16 @@ namespace lane_detect::debug
         // Begin transmission
         printf("START"); // Start of transmission
 
-        // Transmit the number of rows and columns
-        const int channels = frame.channels();
-
         printf("%04x", frame.rows);
         printf("%04x", frame.cols);
-        printf("%04x", channels);
+        printf("%04x", frame.channels());
 
         // Transmit the data of the frame.
         for (int row = 0; row < frame.rows; row++) 
         {
             for (int col = 0; col < frame.cols; col++)
             {
-                for (int channel = 0; channel < channels; channel++)
-                {
-                    printf("%02x", frame.at<uint8_t>(row, col, channel));
-                }
+                printf("%04x", frame.at<uint16_t>(row, col));
             }
             vTaskDelay(1); // To avoid the watchdog on especially large matrices.
         }
