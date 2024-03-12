@@ -38,6 +38,11 @@ namespace lane_detect::debug
         {
             printf("CV_8U__");
         }
+        // HSV
+        else if (CV_8UC3 == type)
+        {
+            printf("CV_8UC3");
+        }
 
         // Transmit the data of the frame.
         if (CV_8UC2 == type)
@@ -60,6 +65,21 @@ namespace lane_detect::debug
                     printf("%02x", frame.at<uint8_t>(row, col));
                 }
                 vTaskDelay(1); // To avoid the watchdog on especially large matrices.
+            }
+        }
+        else if (CV_8UC3 == type)
+        {
+            for (int row = 0; row < frame.rows; row++)
+            {
+                for (int col = 0; col < frame.cols; col++)
+                {
+                    const auto pixel = frame.at<cv::Vec3b>(row, col);
+
+                    for (int channel = 0; channel < pixel.channels; channel++)
+                    {
+                        printf("%02x", pixel[channel]);
+                    }
+                }
             }
         }
 

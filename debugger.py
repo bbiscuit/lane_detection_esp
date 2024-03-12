@@ -15,11 +15,12 @@ def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_nam
     global thresh_frame
 
     if thresh_frame is not None:
-        frame = cv2.inRange(
-            thresh_frame, 
-            (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value']),
-            (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
-        )
+        low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
+        high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
+        frame = cv2.inRange(thresh_frame, low, high)
+
+        print(low)
+        print(high)
 
         cv2.imshow(win_name, frame)
 
@@ -89,16 +90,19 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
                 cv2.imshow('Pre-processed Frame', frame)
 
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-                cv2.imshow('HSV', frame)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                # cv2.imshow('HSV', frame)
 
-                thresh_frame = frame
-                disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
+                # thresh_frame = frame
+                # disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
             elif 'CV_8UC1' == frame_type or 'CV_8U__' == frame_type:
                 cv2.imshow('Mask', frame)
+            
+            elif 'CV_8UC3' == frame_type:
+                cv2.imshow('8-bit Color', frame)
 
             # Respawn the reader thread (so that the window can still read updates)
             reader_thread = threading.Thread(target=frame_reader)
