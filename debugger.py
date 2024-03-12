@@ -87,13 +87,21 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
 
             # If the received thread was of type CV_8UC2, up it to eight-bit color and display.
             if 'CV_8UC2' == frame_type:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
-                cv2.imshow('Pre-processed Frame', frame)
+                BIG_ROWS = 300
+                BIG_COLS = 300
 
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                # Convert to a color that we can process.
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
+
+                # Blow it up so that it's easier to see.
+                # big_frame = np.zeros((BIG_ROWS, BIG_COLS, 3))
+                big_frame = cv2.resize(frame, (BIG_ROWS, BIG_COLS))
+                cv2.imshow('Pre-processed Frame', big_frame)
+
+                frame_hsv = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
                 # cv2.imshow('HSV', frame)
 
-                thresh_frame = frame
+                thresh_frame = frame_hsv
                 disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
