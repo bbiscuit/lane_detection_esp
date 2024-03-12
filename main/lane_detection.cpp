@@ -111,6 +111,43 @@ inline void canny_and_disp()
     }
 }
 
+/// @brief Test function. Do the RGB565 covnersion manually rather than through the
+/// lib.
+/// @param mat The matrix to convert.
+cv::Mat rgb565_to_bgr(cv::Mat& mat)
+{
+    const auto rows = mat.rows;
+    const auto cols = mat.cols;
+
+    cv::Mat result(rows, cols, CV_8UC3);
+
+    for (int row = 0; row < rows; row++)
+    {
+        for (int col = 0; col < cols; col++)
+        {
+            const auto pixel_vector = mat.at<cv::Vec2b>(row, col);
+            cv::Vec3b& dest_pixel = result.at<cv::Vec3b>(row, col);
+
+            const uint16_t pixel = pixel_vector[0] << 8 | pixel_vector[1];
+
+            const uint8_t r5 = (pixel >> 11) & 0x1F;
+            const uint8_t g6 = (pixel >> 5) & 0x3F;
+            const uint8_t b5 = pixel & 0x1F;
+
+            const uint8_t r8 = ( r5 * 527 + 23 ) >> 6;
+            const uint8_t g8 = (g6 * 259 + 33) >> 6;
+            const uint8_t b8 = (b5 * 527 + 23) >> 6;
+
+            dest_pixel[0] = b8;
+            dest_pixel[1] = g8;
+            dest_pixel[2] = r8;
+
+        }
+    }
+
+    return result;
+}
+
 
 /// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
 /// the connected screen, and also pushes it onto an output Queue for debugging purposes.
@@ -137,20 +174,57 @@ inline void thresh_and_disp()
             continue;
         }
 
-        lane_detect::debug::send_matrix(working_frame);
+        //lane_detect::debug::send_matrix(working_frame);
         //cv::resize(working_frame, working_frame, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
 
         // Perform thresholding.
-        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652BGR);
-        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR2HSV);
-        cv::Mat thresh;
-        cv::inRange(working_frame, cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val), cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val), thresh);
+        cv::Mat hsv;
+        //cv::cvtColor(working_frame, rgb, cv::COLOR_BGR5652BGR, 3);
 
-        lane_detect::debug::send_matrix(thresh);
+        cv::Mat bgr = rgb565_to_bgr(working_frame);
+
+        lane_detect::debug::send_matrix(bgr);
+
+        cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
+
+
+        cv::Mat thresh;
+
+        const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
+        const auto high = cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val);
+        cv::inRange(hsv, low, high, thresh);
+
+        //lane_detect::debug::send_matrix(thresh);
 
         // Write it to the display.
-        write_bin_mat(screen, working_frame);
+        write_bin_mat(screen, thresh);
         vTaskDelay(1);
+    }
+}
+
+
+inline void vals_test()
+{
+    camera_fb_t* fb = nullptr;
+
+    constexpr uint8_t cols = 90;
+    constexpr uint8_t rows = 90;
+
+    while (true)
+    {
+        fb = esp_camera_fb_get();
+        auto buf = (uint16_t*)fb->buf;
+
+        for (uint8_t col = 0; col < cols; col++)
+        {
+            uint32_t sum = 0;
+            for (uint8_t row = 0; row < rows; row++)
+            {
+                //uint16_t pixel_val = buf[row + rows * ]
+            }
+        }
+
+        esp_camera_fb_return(fb);
     }
 }
 

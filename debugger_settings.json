@@ -1,1 +1,1 @@
-{"default_com_port": "/dev/ttyUSB0", "thresh_color_min": {"hue": 0, "saturation": 0, "value": 230}, "thresh_color_max": {"hue": 179, "saturation": 255, "value": 255}}
+{"default_com_port": "/dev/ttyUSB0", "thresh_color_min": {"hue": 0, "saturation": 0, "value": 241}, "thresh_color_max": {"hue": 179, "saturation": 255, "value": 255}}
