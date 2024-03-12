@@ -174,29 +174,21 @@ inline void thresh_and_disp()
             continue;
         }
 
-        //lane_detect::debug::send_matrix(working_frame);
-        //cv::resize(working_frame, working_frame, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
+        lane_detect::debug::send_matrix(working_frame);
+        
 
         // Perform thresholding.
-        cv::Mat hsv;
-        //cv::cvtColor(working_frame, rgb, cv::COLOR_BGR5652BGR, 3);
-
         cv::Mat bgr = rgb565_to_bgr(working_frame);
-
-        lane_detect::debug::send_matrix(bgr);
-
+        cv::Mat hsv;
         cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
-
-
-        cv::Mat thresh;
-
         const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
         const auto high = cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val);
+        cv::Mat thresh;
         cv::inRange(hsv, low, high, thresh);
 
-        //lane_detect::debug::send_matrix(thresh);
-
         // Write it to the display.
+        cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
+        lane_detect::debug::send_matrix(thresh);
         write_bin_mat(screen, thresh);
         vTaskDelay(1);
     }

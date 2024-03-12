@@ -90,11 +90,11 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
                 cv2.imshow('Pre-processed Frame', frame)
 
-                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 # cv2.imshow('HSV', frame)
 
-                # thresh_frame = frame
-                # disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
+                thresh_frame = frame
+                disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
