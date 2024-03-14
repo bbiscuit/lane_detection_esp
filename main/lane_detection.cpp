@@ -178,7 +178,8 @@ inline void thresh_and_disp()
         
 
         // Perform thresholding.
-        cv::Mat bgr = rgb565_to_bgr(working_frame);
+        cv::Mat bgr;
+        cv::cvtColor(working_frame, bgr, cv::COLOR_BGR5652BGR);
         cv::Mat hsv;
         cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
         const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
