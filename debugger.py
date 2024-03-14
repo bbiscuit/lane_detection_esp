@@ -124,12 +124,15 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
             break
 
 
-def setup_color_thresh_window(window_name: str, thresh_color_min: dict, thresh_color_max: dict):
+def setup_color_thresh_window(window_name: str, thresh_color_min: dict, thresh_color_max: dict, frame_height: int):
     """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
 
     def on_trackbar(val, color_to_update, dim):
         color_to_update[dim] = val
         disp_threshold_frame(thresh_color_min, thresh_color_max, window_name)
+    
+    def on_thresh_pos_change(val):
+        pass
 
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
@@ -139,6 +142,8 @@ def setup_color_thresh_window(window_name: str, thresh_color_min: dict, thresh_c
     cv2.createTrackbar("Max Hue", window_name, thresh_color_max["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue"))
     cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
     cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
+
+    cv2.createTrackbar("Thresholding position begin", window_name, 0, frame_height, on_thresh_pos_change)
 
 
 def load_settings(filename: str) -> dict:
@@ -171,7 +176,7 @@ def main():
     thresh_color_min = settings['thresh_color_min']
     thresh_color_max = settings['thresh_color_max']
 
-    setup_color_thresh_window('Thresholding', thresh_color_min, thresh_color_max)
+    setup_color_thresh_window('Thresholding', thresh_color_min, thresh_color_max, 96)
     main_loop(s, thresh_color_min, thresh_color_max)
 
     # Write-back convenience values to settings.
