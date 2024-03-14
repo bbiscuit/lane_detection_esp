@@ -51,7 +51,12 @@ namespace lane_detect::debug
             {
                 for (int col = 0; col < frame.cols; col++)
                 {
-                    printf("%04x", frame.at<uint16_t>(row, col));
+                    const auto& pixel = frame.at<cv::Vec2b>(row, col);
+
+                    for (int channel = 0; channel < pixel.channels; channel++)
+                    {
+                        printf("%02x", pixel[channel]);
+                    }
                 }
                 vTaskDelay(1); // To avoid the watchdog on especially large matrices.
             }

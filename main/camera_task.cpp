@@ -102,6 +102,20 @@ namespace lane_detect
 
         // Build the OpenCV matrix.
         // CV_8UC2 is two-channel color, with 8-bit channels.
-        return cv::Mat(fb->height, fb->width, CV_8UC2, fb->buf);
+        auto result = cv::Mat(fb->height, fb->width, CV_8UC2, fb->buf);
+
+        // Flip the bytes of the matrix so that it can be processed using OpenCV functions.
+        for (auto row = 0; row < result.rows; row++)
+        {
+            for (auto col = 0; col < result.cols; col++)
+            {
+                auto& pixel = result.at<cv::Vec2b>(row, col);
+                const auto temp = pixel[0];
+                pixel[0] = pixel[1];
+                pixel[1] = temp;
+            }
+        }
+
+        return result;
     }
 }
