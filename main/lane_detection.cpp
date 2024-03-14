@@ -36,7 +36,7 @@
 #include "common.h"
 #include "camera_task.h"
 #include "debugging.h"
-#include "thresh.h"
+#include "params.h"
 
 
 static char TAG[]="lane_detection";
@@ -139,16 +139,22 @@ inline void thresh_and_disp()
 
         lane_detect::debug::send_matrix(working_frame);
         
-
-        // Perform thresholding.
+        // Get into the right color space for thresholding.
         cv::Mat bgr;
         cv::cvtColor(working_frame, bgr, cv::COLOR_BGR5652BGR);
         cv::Mat hsv;
         cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
+
+        // Add a black rectangle over parts of the image which we don't want to be considered
+        // in the threshold.
+        cv::rectangle(hsv, cv::Rect2i(cv::Point2i(0, 0), cv::Point2i(hsv.cols, crop_row)), cv::Scalar(0, 0, 0), -1);
+
+        // Perform the threshold.
         const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
         const auto high = cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val);
         cv::Mat thresh;
         cv::inRange(hsv, low, high, thresh);
+
 
         // Write it to the display.
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
