@@ -16,5 +16,5 @@ constexpr uint8_t thresh_max_hue = 178;
 constexpr uint8_t thresh_max_sat = 255;
 constexpr uint8_t thresh_max_val = 255;
 
-constexpr uint8_t crop_row = 50
+constexpr uint8_t crop_row = 50;
 
