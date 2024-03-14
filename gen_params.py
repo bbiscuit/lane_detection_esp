@@ -9,13 +9,10 @@ def main():
     # Load settings.
     with open('debugger_settings.json', 'r') as f:
         settings = json.load(f)
-    
-    thresh_color_min = settings['thresh_color_min']
-    thresh_color_max = settings['thresh_color_max']
 
     # Print the preamble.
     print('///////////////////////////////////////////////////////////////////////////////////////////////////')
-    print('/// A generated file which contains constants for thresholding.')
+    print('/// A generated file which contains constants determined in the Python debugging tool.')
     print('///')
     print('/// Author: Andrew Huffman')
     print('///////////////////////////////////////////////////////////////////////////////////////////////////')
@@ -26,15 +23,19 @@ def main():
     print()
 
     # Print the min colors.
-    print(f'constexpr uint8_t thresh_min_hue = {thresh_color_min["hue"]};')
-    print(f'constexpr uint8_t thresh_min_sat = {thresh_color_min["saturation"]};')
-    print(f'constexpr uint8_t thresh_min_val = {thresh_color_min["value"]};')
+    print(f'constexpr uint8_t thresh_min_hue = {settings["thresh_color_min"]["hue"]};')
+    print(f'constexpr uint8_t thresh_min_sat = {settings["thresh_color_min"]["saturation"]};')
+    print(f'constexpr uint8_t thresh_min_val = {settings["thresh_color_min"]["value"]};')
     print()
 
     # Print the max colors.
-    print(f'constexpr uint8_t thresh_max_hue = {thresh_color_max["hue"]};')
-    print(f'constexpr uint8_t thresh_max_sat = {thresh_color_max["saturation"]};')
-    print(f'constexpr uint8_t thresh_max_val = {thresh_color_max["value"]};')
+    print(f'constexpr uint8_t thresh_max_hue = {settings["thresh_color_max"]["hue"]};')
+    print(f'constexpr uint8_t thresh_max_sat = {settings["thresh_color_max"]["saturation"]};')
+    print(f'constexpr uint8_t thresh_max_val = {settings["thresh_color_max"]["value"]};')
+    print()
+
+    # Print the cropping parameter.
+    print(f'constexpr uint8_t crop_row = {settings["crop_row"]}')
     print()
 
 

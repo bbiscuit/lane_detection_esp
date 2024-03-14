@@ -36,7 +36,7 @@
 #include "common.h"
 #include "camera_task.h"
 #include "debugging.h"
-#include "thresh.h"
+#include "params.h"
 
 
 static char TAG[]="lane_detection";
