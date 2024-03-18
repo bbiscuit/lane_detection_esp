@@ -81,7 +81,7 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     return (mat_data, type)
 
 
-def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
+def main_loop(s: serial.Serial, settings: dict):
 
     global thresh_frame
 
@@ -121,7 +121,7 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
                 # cv2.imshow('HSV', frame)
 
                 thresh_frame = frame_hsv
-                disp_threshold_frame(thresh_color_min, thresh_color_max, 'Thresholding')
+                disp_threshold_frame(settings['thresh_color_min'], settings['thresh_color_max'], 'Thresholding')
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
@@ -143,8 +143,11 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
             break
 
 
-def setup_color_thresh_window(window_name: str, thresh_color_min: dict, thresh_color_max: dict, native_frame_height: int, local_frame_height: int, settings: dict):
+def setup_color_thresh_window(window_name: str, native_frame_height: int, local_frame_height: int, settings: dict):
     """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
+
+    thresh_color_min = settings['thresh_color_min']
+    thresh_color_max = settings['thresh_color_max']
 
     def on_trackbar(val, color_to_update, dim):
         color_to_update[dim] = val
@@ -200,8 +203,8 @@ def main():
     thresh_color_min = settings['thresh_color_min']
     thresh_color_max = settings['thresh_color_max']
 
-    setup_color_thresh_window('Thresholding', thresh_color_min, thresh_color_max, 96, 300, settings)
-    main_loop(s, thresh_color_min, thresh_color_max)
+    setup_color_thresh_window('Thresholding', 96, 300, settings)
+    main_loop(s, settings)
 
     # Write-back convenience values to settings.
     settings['thresh_color_min'] = thresh_color_min
