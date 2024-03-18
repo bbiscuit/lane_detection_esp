@@ -11,6 +11,7 @@ import sys
 thresh_frame = None
 thresh_begin_row = 0
 
+detected_center: int = -1
 
 def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_name: str):
     """"""
@@ -31,6 +32,9 @@ def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_nam
 def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
     so that it can be intelligently processed."""
+
+    global detected_center
+
     # Busy-wait until we recieve the start bit (1)
     while True:
         if s.read() == b'S':
@@ -39,6 +43,14 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
                     if s.read() == b'R':
                         if s.read() == b'T':
                             break
+        if s.read() == b'c':
+            if s.read() == b'e':
+                if s.read() == b'n':
+                    if s.read() == b't':
+                        if s.read() == b'e':
+                            if s.read() == b'r':
+                                print('Read center line.')
+                                detected_center = int(s.readline().decode())
     
     # Read the 32-bit number of rows
     rows = int(s.read(size=4).decode(), base=16)
@@ -95,6 +107,10 @@ def main_loop(s: serial.Serial, thresh_color_min: dict, thresh_color_max: dict):
 
                 # Convert to a color that we can process.
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
+
+                # If we have read a center, draw it in read on the image.
+                if detected_center != 0:
+                    cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
 
                 # Blow it up so that it's easier to see.
                 # big_frame = np.zeros((BIG_ROWS, BIG_COLS, 3))
