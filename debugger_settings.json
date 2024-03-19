@@ -1,1 +1,1 @@
-{"default_com_port": "/dev/ttyUSB0", "crop_row": 51, "thresh_color_min": {"hue": 8, "saturation": 0, "value": 238}, "thresh_color_max": {"hue": 179, "saturation": 255, "value": 255}}
+{"default_com_port": "/dev/ttyUSB0", "cropping": {"left": 0, "right": 0, "top": 0, "bottom": 0}, "thresh_color_min": {"hue": 8, "saturation": 0, "value": 238}, "thresh_color_max": {"hue": 179, "saturation": 255, "value": 255}}
