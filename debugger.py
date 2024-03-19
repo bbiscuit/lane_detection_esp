@@ -200,15 +200,10 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
-    thresh_color_min = settings['thresh_color_min']
-    thresh_color_max = settings['thresh_color_max']
-
     setup_color_thresh_window('Thresholding', 96, 300, settings)
     main_loop(s, settings)
 
     # Write-back convenience values to settings.
-    settings['thresh_color_min'] = thresh_color_min
-    settings['thresh_color_max'] = thresh_color_max
     with open('debugger_settings.json', 'w') as f:
         json.dump(settings, f)
 
