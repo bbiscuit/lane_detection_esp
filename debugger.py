@@ -9,19 +9,36 @@ import json
 import sys
 
 thresh_frame = None
-thresh_begin_row = 0
 
 detected_center: int = -1
 
 def disp_threshold_frame(win_name: str, settings: dict):
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger."""
     global thresh_frame
-    global thresh_begin_row
 
     if thresh_frame is not None:
         working_frame = thresh_frame.copy()
-        cv2.rectangle(working_frame, (0, 0), (thresh_frame.shape[0], thresh_begin_row), (0, 0, 0), thickness=-1)
 
+        # Perform cropping of the image based upon the cropping parameters.
+        cropping = settings['cropping']
+
+        top_cropping = cropping['top']
+        if top_cropping > 0:
+            pass
+
+        bottom_cropping = cropping['bottom']
+        if bottom_cropping > 0:
+            pass
+
+        left_cropping = cropping['left']
+        if left_cropping > 0:
+            pass
+        
+        right_cropping = cropping['right']
+        if right_cropping > 0:
+            pass
+
+        # Perform color thresholding.
         thresh_color_min = settings['thresh_color_min']
         thresh_color_max = settings['thresh_color_max']
 
@@ -157,8 +174,6 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
         color_to_update[dim] = val
         disp_threshold_frame(window_name, settings)
     
-
-
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
     cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
