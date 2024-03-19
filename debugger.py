@@ -22,23 +22,23 @@ def disp_threshold_frame(win_name: str, settings: dict):
 
         # Perform cropping of the image based upon the cropping parameters.
         cropping = settings['cropping']
-        rows, cols, _ = thresh_frame.shape
+        rows, cols, _ = working_frame.shape
 
         top_cropping = cropping['top']
         if top_cropping > 0:
-            cv2.rectangle(thresh_frame, (0, 0), (cols, top_cropping), (0, 0, 0), -1)
+            cv2.rectangle(working_frame, (0, 0), (cols, top_cropping), (0, 0, 0), -1)
 
         bottom_cropping = cropping['bottom']
         if bottom_cropping > 0:
-            pass
+            cv2.rectangle(working_frame, (0, rows), (cols, rows - bottom_cropping), (0, 0, 0), -1)
 
         left_cropping = cropping['left']
         if left_cropping > 0:
-            pass
+            cv2.rectangle(working_frame, (0, 0), (left_cropping, rows), (0, 0, 0), -1)
         
         right_cropping = cropping['right']
         if right_cropping > 0:
-            pass
+            cv2.rectangle(working_frame, (cols, 0), (cols - right_cropping, rows), (0, 0, 0), -1)
 
         # Perform color thresholding.
         thresh_color_min = settings['thresh_color_min']
@@ -142,7 +142,7 @@ def main_loop(s: serial.Serial, settings: dict):
 
                 frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 thresh_frame = frame_hsv
-                disp_threshold_frame('Thresholding', settings, frame.shape[0], frame.shape[1])
+                disp_threshold_frame('Thresholding', settings)
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.

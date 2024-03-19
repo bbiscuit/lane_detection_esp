@@ -202,7 +202,7 @@ inline void thresh_and_disp()
             continue;
         }
 
-        //lane_detect::debug::send_matrix(working_frame);
+        lane_detect::debug::send_matrix(working_frame);
         //const auto start_tick = xTaskGetTickCount();
         
         // Get into the right color space for thresholding.
