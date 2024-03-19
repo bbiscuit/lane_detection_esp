@@ -120,6 +120,8 @@ inline void canny_and_disp()
 /// @return The project center column.
 inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 0)
 {
+    //const auto start_tick = xTaskGetTickCount();
+
     uint16_t result = 0; // The center column.
     uint16_t sums[mask.cols] = {0};
     
@@ -167,6 +169,10 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
     // The center of the lane is the average of the right and left lines.
     result = ((dotted_col + solid_col) >> 1);
 
+    //const auto end_tick = xTaskGetTickCount();
+
+    //printf("Ticks for get_lane_center: %ld\n", (end_tick - start_tick));
+
     return result;
 }
 
@@ -196,7 +202,8 @@ inline void thresh_and_disp()
             continue;
         }
 
-        lane_detect::debug::send_matrix(working_frame);
+        //lane_detect::debug::send_matrix(working_frame);
+        //const auto start_tick = xTaskGetTickCount();
         
         // Get into the right color space for thresholding.
         cv::Mat bgr;
@@ -221,33 +228,11 @@ inline void thresh_and_disp()
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
         //lane_detect::debug::send_matrix(thresh);
         write_bin_mat(screen, thresh);
+
+        //const auto end_tick = xTaskGetTickCount();
+        //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));
+
         vTaskDelay(1);
-    }
-}
-
-
-inline void vals_test()
-{
-    camera_fb_t* fb = nullptr;
-
-    constexpr uint8_t cols = 90;
-    constexpr uint8_t rows = 90;
-
-    while (true)
-    {
-        fb = esp_camera_fb_get();
-        auto buf = (uint16_t*)fb->buf;
-
-        for (uint8_t col = 0; col < cols; col++)
-        {
-            uint32_t sum = 0;
-            for (uint8_t row = 0; row < rows; row++)
-            {
-                //uint16_t pixel_val = buf[row + rows * ]
-            }
-        }
-
-        esp_camera_fb_return(fb);
     }
 }
 
