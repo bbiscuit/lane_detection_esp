@@ -213,7 +213,7 @@ inline void thresh_and_disp()
 
         // Add a black rectangle over parts of the image which we don't want to be considered
         // in the threshold.
-        cv::rectangle(hsv, cv::Rect2i(cv::Point2i(0, 0), cv::Point2i(hsv.cols, crop_row)), cv::Scalar(0, 0, 0), -1);
+        cv::rectangle(hsv, cv::Rect2i(cv::Point2i(0, 0), cv::Point2i(hsv.cols, top_cropping)), cv::Scalar(0, 0, 0), -1);
 
         // Perform the threshold.
         const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
@@ -221,7 +221,7 @@ inline void thresh_and_disp()
         cv::Mat thresh;
         cv::inRange(hsv, low, high, thresh);
 
-        const uint8_t center_col = get_lane_center(thresh, crop_row);
+        const uint8_t center_col = get_lane_center(thresh, top_cropping);
         printf("center %d\n", center_col);
 
         // Write it to the display.
