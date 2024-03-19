@@ -135,8 +135,12 @@ def main_loop(s: serial.Serial, settings: dict):
                 big_frame = cv2.resize(frame, (settings['scaled_frame_size']['height'], settings['scaled_frame_size']['width']))
                 cv2.imshow('Pre-processed Frame', big_frame)
 
-                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't been set up yet; therefore,
+                # set it up.
+                if thresh_frame is None:
+                    setup_color_thresh_window('Thresholding', 96, settings)
 
+                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 thresh_frame = frame_hsv
                 disp_threshold_frame('Thresholding', settings)
 
@@ -219,7 +223,6 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
-    setup_color_thresh_window('Thresholding', 96, settings)
     main_loop(s, settings)
 
     # Write-back convenience values to settings.
