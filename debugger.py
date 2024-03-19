@@ -13,14 +13,17 @@ thresh_begin_row = 0
 
 detected_center: int = -1
 
-def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_name: str):
-    """"""
+def disp_threshold_frame(win_name: str, settings: dict):
+    """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger."""
     global thresh_frame
     global thresh_begin_row
 
     if thresh_frame is not None:
         working_frame = thresh_frame.copy()
         cv2.rectangle(working_frame, (0, 0), (thresh_frame.shape[0], thresh_begin_row), (0, 0, 0), thickness=-1)
+
+        thresh_color_min = settings['thresh_color_min']
+        thresh_color_max = settings['thresh_color_max']
 
         low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
         high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
@@ -121,7 +124,7 @@ def main_loop(s: serial.Serial, settings: dict):
                 # cv2.imshow('HSV', frame)
 
                 thresh_frame = frame_hsv
-                disp_threshold_frame(settings['thresh_color_min'], settings['thresh_color_max'], 'Thresholding')
+                disp_threshold_frame('Thresholding', settings)
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
@@ -148,10 +151,11 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
 
     thresh_color_min = settings['thresh_color_min']
     thresh_color_max = settings['thresh_color_max']
+    cropping = settings['cropping']
 
     def on_trackbar(val, color_to_update, dim):
         color_to_update[dim] = val
-        disp_threshold_frame(thresh_color_min, thresh_color_max, window_name)
+        disp_threshold_frame(window_name, settings)
     
     def on_thresh_pos_change(val):
         global thresh_begin_row
@@ -159,7 +163,7 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
         settings['crop_row'] = val
 
         thresh_begin_row = int(val / native_frame_height * local_frame_height)
-        disp_threshold_frame(thresh_color_min, thresh_color_max, window_name)
+        disp_threshold_frame(window_name, settings)
 
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
@@ -170,8 +174,9 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
     cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
     cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
 
-    cv2.createTrackbar("Thresholding position begin", window_name, settings['crop_row'], native_frame_height, on_thresh_pos_change)
-
+    # cv2.createTrackbar("Thresholding position begin", window_name, settings['crop_row'], native_frame_height, on_thresh_pos_change)
+    # Create cropping trackbars.
+    #cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, )
 
 def load_settings(filename: str) -> dict:
     """Loads settings for the app from the given json file."""
