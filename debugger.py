@@ -8,13 +8,11 @@ import functools
 import json
 import sys
 
-NATIVE_FRAME_WIDTH = 96
-NATIVE_FRAME_HEIGHT = 96
 thresh_frame = None
 
 detected_center: int = -1
 
-def disp_threshold_frame(win_name: str, settings: dict):
+def disp_threshold_frame(win_name: str, settings: dict, native_frame_height: int, native_frame_width: int):
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger."""
     global thresh_frame
 
@@ -138,11 +136,11 @@ def main_loop(s: serial.Serial, settings: dict):
                 # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't been set up yet; therefore,
                 # set it up.
                 if thresh_frame is None:
-                    setup_color_thresh_window('Thresholding', 96, settings)
+                    setup_color_thresh_window('Thresholding', frame.shape[0], frame.shape[1], settings)
 
                 frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 thresh_frame = frame_hsv
-                disp_threshold_frame('Thresholding', settings)
+                disp_threshold_frame('Thresholding', settings, frame.shape[0], frame.shape[1])
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
@@ -164,7 +162,7 @@ def main_loop(s: serial.Serial, settings: dict):
             break
 
 
-def setup_color_thresh_window(window_name: str, native_frame_height: int, settings: dict):
+def setup_color_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
     """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
 
     thresh_color_min = settings['thresh_color_min']
@@ -191,8 +189,8 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, settin
 
     # Create cropping trackbars.
     cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top'))
-    cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
-    cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
+    cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
+    cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
     cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
 
 
