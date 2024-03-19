@@ -7,11 +7,40 @@ import queue
 import functools
 import json
 import sys
+import matplotlib.pyplot as plt
 
 thresh_frame = None
 thresh_begin_row = 0
 
 detected_center: int = -1
+kohl_plot = None
+
+def plot_col_sums(mask: cv2.Mat):
+    global kohl_plot
+
+    plt.style.use('_mpl-gallery')
+
+    # Gather the data: take the sum of the columns.
+    sums = np.zeros((1, mask.shape[1]))
+    print(mask.shape)
+    rows, cols = mask.shape
+    
+    for row in range(rows):
+        for col in range(cols):
+            sums[0, col] += mask[row, col]
+
+    # Create the scatterplot if it doesn't exist, or update it if it does.
+    x = range(cols)
+    if kohl_plot is None:
+        fig, ax = plt.subplots()
+        kohl_plot = ax.scatter(x, sums)
+        ax.set(xlim=(0, cols), ylim=(0, 100))
+        plt.show()
+    else:
+        kohl_plot.set_xdata(x)
+        kohl_plot.set_ydata(sums)
+
+
 
 def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_name: str):
     """"""
@@ -25,6 +54,8 @@ def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_nam
         low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
         high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
         working_frame = cv2.inRange(working_frame, low, high)
+
+        plot_col_sums(working_frame)
 
         cv2.imshow(win_name, working_frame)
 
@@ -117,7 +148,7 @@ def main_loop(s: serial.Serial, settings: dict):
                 big_frame = cv2.resize(frame, (BIG_ROWS, BIG_COLS))
                 cv2.imshow('Pre-processed Frame', big_frame)
 
-                frame_hsv = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
+                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 # cv2.imshow('HSV', frame)
 
                 thresh_frame = frame_hsv
