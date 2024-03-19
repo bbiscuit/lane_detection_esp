@@ -157,13 +157,7 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
         color_to_update[dim] = val
         disp_threshold_frame(window_name, settings)
     
-    def on_thresh_pos_change(val):
-        global thresh_begin_row
 
-        settings['crop_row'] = val
-
-        thresh_begin_row = int(val / native_frame_height * local_frame_height)
-        disp_threshold_frame(window_name, settings)
 
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
@@ -175,6 +169,12 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
     cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
 
     # cv2.createTrackbar("Thresholding position begin", window_name, settings['crop_row'], native_frame_height, on_thresh_pos_change)
+
+    def cropping_callback(val, crop_settings: dict, crop_direction: str):
+        """The callback for trackbars related to image cropping."""
+        crop_settings[crop_direction] = val
+        disp_threshold_frame(window_name, settings)
+
     # Create cropping trackbars.
     #cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, )
 
