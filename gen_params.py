@@ -35,7 +35,11 @@ def main():
     print()
 
     # Print the cropping parameter.
-    print(f'constexpr uint8_t crop_row = {settings["crop_row"]};')
+    cropping = settings["cropping"]
+    print(f'constexpr uint8_t top_cropping = {cropping["top"]};')
+    print(f'constexpr uint8_t bottom_cropping = {cropping["bottom"]};')
+    print(f'constexpr uint8_t left_cropping = {cropping["left"]};')
+    print(f'constexpr uint8_t right_cropping = {cropping["right"]};')
     print()
 
 
