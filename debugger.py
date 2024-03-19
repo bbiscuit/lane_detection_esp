@@ -168,15 +168,17 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
     cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
     cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
 
-    # cv2.createTrackbar("Thresholding position begin", window_name, settings['crop_row'], native_frame_height, on_thresh_pos_change)
-
     def cropping_callback(val, crop_settings: dict, crop_direction: str):
         """The callback for trackbars related to image cropping."""
         crop_settings[crop_direction] = val
         disp_threshold_frame(window_name, settings)
 
     # Create cropping trackbars.
-    #cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, )
+    cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top'))
+    cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
+    cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
+    cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
+
 
 def load_settings(filename: str) -> dict:
     """Loads settings for the app from the given json file."""
