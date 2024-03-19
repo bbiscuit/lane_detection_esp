@@ -122,52 +122,25 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 {
     //const auto start_tick = xTaskGetTickCount();
 
+    // The minimum width of the lane necessary to take a data point.
+    constexpr uint16_t MIN_WIDTH = 30;
+
     uint16_t result = 0; // The center column.
-    uint16_t sums[mask.cols] = {0};
     
-    // Sum up the columns into the "sums" array,
     for (uint16_t row = start_row; row < mask.rows; row++)
     {
-        for (uint16_t col = 0; col < mask.cols; col++)
+        bool in_lane = false; // True if the first white pixel has been detected.
+        uint16_t px_since_line = 0; // The number of pixels since the last white space.
+
+        for (int16_t col = (mask.cols - 1); 0 >= col; col--)
         {
-            sums[col] += mask.at<uint8_t>(row, col);
+            // If a white pixel has not been detected yet, then contrinue.
+
+            // Otherwise, check if this pixel is white.
+            // If this pixel is white and 
+            // Increment the number of pixels since the last white one.
         }
     }
-
-    // Split the image into two halves -- the left half should contain the left dotted line,
-    // the right half should contain the right solid line.
-    const uint8_t half = (mask.cols >> 1);
-
-    // Find the max of that which is on the left side of the image. Call that the dotted line.
-    uint16_t dotted_col = 0;
-    uint16_t max = 0;
-
-    for (uint16_t col = 0; col < half; col++)
-    {
-        const uint16_t val = sums[col];
-        if (val > max)
-        {
-            max = val;
-            dotted_col = col;
-        }
-    }
-
-    // Find the max of that which is on the right side of the image. Call that the solid line.
-    uint16_t solid_col = 0;
-    max = 0;
-
-    for (uint16_t col = half; col < mask.cols; col++)
-    {
-        const uint16_t val = sums[col];
-        if (val > max)
-        {
-            max = val;
-            solid_col = col;
-        }
-    }
-
-    // The center of the lane is the average of the right and left lines.
-    result = ((dotted_col + solid_col) >> 1);
 
     //const auto end_tick = xTaskGetTickCount();
 
