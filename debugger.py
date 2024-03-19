@@ -12,8 +12,9 @@ thresh_frame = None
 
 detected_center: int = -1
 
-def disp_threshold_frame(win_name: str, settings: dict, native_frame_height: int, native_frame_width: int):
-    """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger."""
+def disp_threshold_frame(win_name: str, settings: dict):
+    """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger. 
+    It will also scale the frame to that which is in the settings before displaying."""
     global thresh_frame
 
     if thresh_frame is not None:
@@ -21,10 +22,11 @@ def disp_threshold_frame(win_name: str, settings: dict, native_frame_height: int
 
         # Perform cropping of the image based upon the cropping parameters.
         cropping = settings['cropping']
+        rows, cols, _ = thresh_frame.shape
 
         top_cropping = cropping['top']
         if top_cropping > 0:
-            pass
+            cv2.rectangle(thresh_frame, (0, 0), (cols, top_cropping), (0, 0, 0), -1)
 
         bottom_cropping = cropping['bottom']
         if bottom_cropping > 0:
