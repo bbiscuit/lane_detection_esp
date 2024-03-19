@@ -8,6 +8,8 @@ import functools
 import json
 import sys
 
+NATIVE_FRAME_WIDTH = 96
+NATIVE_FRAME_HEIGHT = 96
 thresh_frame = None
 
 detected_center: int = -1
@@ -122,9 +124,6 @@ def main_loop(s: serial.Serial, settings: dict):
 
             # If the received thread was of type CV_8UC2, up it to eight-bit color and display.
             if 'CV_8UC2' == frame_type:
-                BIG_ROWS = 300
-                BIG_COLS = 300
-
                 # Convert to a color that we can process.
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
 
@@ -133,12 +132,10 @@ def main_loop(s: serial.Serial, settings: dict):
                     cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
 
                 # Blow it up so that it's easier to see.
-                # big_frame = np.zeros((BIG_ROWS, BIG_COLS, 3))
-                big_frame = cv2.resize(frame, (BIG_ROWS, BIG_COLS))
+                big_frame = cv2.resize(frame, (settings['scaled_frame_size']['height'], settings['scaled_frame_size']['width']))
                 cv2.imshow('Pre-processed Frame', big_frame)
 
-                frame_hsv = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
-                # cv2.imshow('HSV', frame)
+                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
                 thresh_frame = frame_hsv
                 disp_threshold_frame('Thresholding', settings)
@@ -163,7 +160,7 @@ def main_loop(s: serial.Serial, settings: dict):
             break
 
 
-def setup_color_thresh_window(window_name: str, native_frame_height: int, local_frame_height: int, settings: dict):
+def setup_color_thresh_window(window_name: str, native_frame_height: int, settings: dict):
     """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
 
     thresh_color_min = settings['thresh_color_min']
@@ -222,7 +219,7 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
-    setup_color_thresh_window('Thresholding', 96, 300, settings)
+    setup_color_thresh_window('Thresholding', 96, settings)
     main_loop(s, settings)
 
     # Write-back convenience values to settings.
