@@ -9,18 +9,40 @@ import json
 import sys
 
 thresh_frame = None
-thresh_begin_row = 0
 
 detected_center: int = -1
 
-def disp_threshold_frame(thresh_color_min: dict, thresh_color_max: dict, win_name: str):
-    """"""
+def disp_threshold_frame(win_name: str, settings: dict):
+    """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger. 
+    It will also scale the frame to that which is in the settings before displaying."""
     global thresh_frame
-    global thresh_begin_row
 
     if thresh_frame is not None:
         working_frame = thresh_frame.copy()
-        cv2.rectangle(working_frame, (0, 0), (thresh_frame.shape[0], thresh_begin_row), (0, 0, 0), thickness=-1)
+
+        # Perform cropping of the image based upon the cropping parameters.
+        cropping = settings['cropping']
+        rows, cols, _ = working_frame.shape
+
+        top_cropping = cropping['top']
+        if top_cropping > 0:
+            cv2.rectangle(working_frame, (0, 0), (cols, top_cropping), (0, 0, 0), -1)
+
+        bottom_cropping = cropping['bottom']
+        if bottom_cropping > 0:
+            cv2.rectangle(working_frame, (0, rows), (cols, rows - bottom_cropping), (0, 0, 0), -1)
+
+        left_cropping = cropping['left']
+        if left_cropping > 0:
+            cv2.rectangle(working_frame, (0, 0), (left_cropping, rows), (0, 0, 0), -1)
+        
+        right_cropping = cropping['right']
+        if right_cropping > 0:
+            cv2.rectangle(working_frame, (cols, 0), (cols - right_cropping, rows), (0, 0, 0), -1)
+
+        # Perform color thresholding.
+        thresh_color_min = settings['thresh_color_min']
+        thresh_color_max = settings['thresh_color_max']
 
         low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
         high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
@@ -102,9 +124,6 @@ def main_loop(s: serial.Serial, settings: dict):
 
             # If the received thread was of type CV_8UC2, up it to eight-bit color and display.
             if 'CV_8UC2' == frame_type:
-                BIG_ROWS = 300
-                BIG_COLS = 300
-
                 # Convert to a color that we can process.
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
 
@@ -113,15 +132,17 @@ def main_loop(s: serial.Serial, settings: dict):
                     cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
 
                 # Blow it up so that it's easier to see.
-                # big_frame = np.zeros((BIG_ROWS, BIG_COLS, 3))
-                big_frame = cv2.resize(frame, (BIG_ROWS, BIG_COLS))
+                big_frame = cv2.resize(frame, (settings['scaled_frame_size']['height'], settings['scaled_frame_size']['width']))
                 cv2.imshow('Pre-processed Frame', big_frame)
 
-                frame_hsv = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
-                # cv2.imshow('HSV', frame)
+                # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't been set up yet; therefore,
+                # set it up.
+                if thresh_frame is None:
+                    setup_color_thresh_window('Thresholding', frame.shape[0], frame.shape[1], settings)
 
+                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 thresh_frame = frame_hsv
-                disp_threshold_frame(settings['thresh_color_min'], settings['thresh_color_max'], 'Thresholding')
+                disp_threshold_frame('Thresholding', settings)
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
@@ -143,24 +164,17 @@ def main_loop(s: serial.Serial, settings: dict):
             break
 
 
-def setup_color_thresh_window(window_name: str, native_frame_height: int, local_frame_height: int, settings: dict):
+def setup_color_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
     """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
 
     thresh_color_min = settings['thresh_color_min']
     thresh_color_max = settings['thresh_color_max']
+    cropping = settings['cropping']
 
     def on_trackbar(val, color_to_update, dim):
         color_to_update[dim] = val
-        disp_threshold_frame(thresh_color_min, thresh_color_max, window_name)
+        disp_threshold_frame(window_name, settings)
     
-    def on_thresh_pos_change(val):
-        global thresh_begin_row
-
-        settings['crop_row'] = val
-
-        thresh_begin_row = int(val / native_frame_height * local_frame_height)
-        disp_threshold_frame(thresh_color_min, thresh_color_max, window_name)
-
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
     cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
@@ -170,7 +184,16 @@ def setup_color_thresh_window(window_name: str, native_frame_height: int, local_
     cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
     cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
 
-    cv2.createTrackbar("Thresholding position begin", window_name, settings['crop_row'], native_frame_height, on_thresh_pos_change)
+    def cropping_callback(val, crop_settings: dict, crop_direction: str):
+        """The callback for trackbars related to image cropping."""
+        crop_settings[crop_direction] = val
+        disp_threshold_frame(window_name, settings)
+
+    # Create cropping trackbars.
+    cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top'))
+    cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
+    cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
+    cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
 
 
 def load_settings(filename: str) -> dict:
@@ -200,15 +223,9 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
-    thresh_color_min = settings['thresh_color_min']
-    thresh_color_max = settings['thresh_color_max']
-
-    setup_color_thresh_window('Thresholding', 96, 300, settings)
     main_loop(s, settings)
 
     # Write-back convenience values to settings.
-    settings['thresh_color_min'] = thresh_color_min
-    settings['thresh_color_max'] = thresh_color_max
     with open('debugger_settings.json', 'w') as f:
         json.dump(settings, f)
 

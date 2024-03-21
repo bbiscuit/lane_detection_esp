@@ -10,5 +10,5 @@ parameter, so speeds may be faster than here recorded.
 
 | Routine | Ticks | Milliseconds |
 | ------- | ----- | ------------ |
-| `thresh_and_disp` | 35 | 35 ms |
+| `thresh_and_disp` | 36 | 36 ms |
 | `get_lane_center` | 1 | 1 ms |

@@ -8,13 +8,16 @@
 
 #include <stdint.h>
 
-constexpr uint8_t thresh_min_hue = 55;
+constexpr uint8_t thresh_min_hue = 8;
 constexpr uint8_t thresh_min_sat = 0;
-constexpr uint8_t thresh_min_val = 240;
+constexpr uint8_t thresh_min_val = 238;
 
-constexpr uint8_t thresh_max_hue = 178;
+constexpr uint8_t thresh_max_hue = 179;
 constexpr uint8_t thresh_max_sat = 255;
 constexpr uint8_t thresh_max_val = 255;
 
-constexpr uint8_t crop_row = 50;
+constexpr uint8_t top_cropping = 45;
+constexpr uint8_t bottom_cropping = 0;
+constexpr uint8_t left_cropping = 60;
+constexpr uint8_t right_cropping = 0;
 
