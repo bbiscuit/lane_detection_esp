@@ -177,6 +177,40 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 }
 
 
+inline void apply_cropping(
+    cv::Mat& frame, 
+    const uint16_t top, 
+    const uint16_t bottom, 
+    const uint16_t left, 
+    const uint16_t right
+)
+{
+    // Do the top cropping.
+    if (top > 0)
+    {
+        cv::rectangle(frame, cv::Rect2i(cv::Point2i(0, 0), cv::Point2i(frame.cols, top)), cv::Scalar(0, 0, 0), -1);
+    }
+
+    // Do the bottom cropping.
+    if (bottom > 0)
+    {
+        cv::rectangle(frame, cv::Rect2i(cv::Point2i(0, frame.rows), cv::Point2i(frame.cols, frame.rows - bottom)), cv::Scalar(0, 0, 0), -1);
+    }
+
+    // Do the left cropping.
+    if (left > 0)
+    {
+        cv::rectangle(frame, cv::Rect2i(cv::Point2i(0, 0), cv::Point2i(left, frame.rows)), cv::Scalar(0, 0, 0), -1);
+    }
+
+    // Do the right cropping.
+    if (right > 0)
+    {
+        cv::rectangle(frame, cv::Rect2i(cv::Point2i(frame.cols, 0), cv::Point2i(frame.cols - right, frame.rows)), cv::Scalar(0, 0, 0), -1);
+    }
+}
+
+
 /// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
 /// the connected screen, and also pushes it onto an output Queue for debugging purposes.
 /// @param arg The input/output queues.
@@ -213,7 +247,7 @@ inline void thresh_and_disp()
 
         // Add a black rectangle over parts of the image which we don't want to be considered
         // in the threshold.
-        cv::rectangle(hsv, cv::Rect2i(cv::Point2i(0, 0), cv::Point2i(hsv.cols, top_cropping)), cv::Scalar(0, 0, 0), -1);
+        apply_cropping(hsv, top_cropping, bottom_cropping, left_cropping, right_cropping);
 
         // Perform the threshold.
         const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
@@ -226,7 +260,7 @@ inline void thresh_and_disp()
 
         // Write it to the display.
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
-        //lane_detect::debug::send_matrix(thresh);
+        lane_detect::debug::send_matrix(thresh);
         write_bin_mat(screen, thresh);
 
         //const auto end_tick = xTaskGetTickCount();
