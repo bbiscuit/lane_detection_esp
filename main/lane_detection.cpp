@@ -165,10 +165,8 @@ inline void apply_cropping(
 }
 
 
-/// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
-/// the connected screen, and also pushes it onto an output Queue for debugging purposes.
-/// @param arg The input/output queues.
-inline void thresh_and_disp()
+/// @brief The main driver loop.
+inline void main_loop()
 {
     camera_fb_t* fb = nullptr;
 
@@ -230,5 +228,5 @@ void app_main(void)
 {
     lane_detect::config_cam();
 
-    thresh_and_disp();
+    main_loop();
 }
