@@ -14,6 +14,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <algorithm>
 
 
 // Esp imports
@@ -128,6 +129,31 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
     //printf("Ticks for get_lane_center: %ld\n", (end_tick - start_tick));
 
     return result;
+}
+
+
+/// @brief Finds the location of the solid line.
+/// @param mask The binary image.
+/// @return The column of the solid line.
+inline int get_solid_line_loc(const cv::Mat1b& mask)
+{
+    // Get the contours.
+    std::vector<std::vector<cv::Point2i>> contours;
+    cv::findContours(mask, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    // Find the largest contour, assume that's the solid line.
+    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point2i>& a, const std::vector<cv::Point2i>& b)
+    {
+        const cv::Rect2i a_rect = cv::boundingRect(a);
+        const cv::Rect2i b_rect = cv::boundingRect(b);
+
+        return a_rect.area() > b_rect.area();
+    });
+    const auto& solid_line = contours[0];
+
+    // Return the x position.
+    const cv::Rect2i solid_line_rect = cv::boundingRect(solid_line);
+    return solid_line_rect.x;
 }
 
 
