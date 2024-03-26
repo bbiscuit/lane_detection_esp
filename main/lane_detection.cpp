@@ -66,52 +66,6 @@ void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
 }
 
 
-/// @brief Runs Canny edge detection on a frame from the input Queue, displays it on
-/// the connected screen, and also pushes it onto an output Queue for debugging purposes.
-/// @param arg The input/output queues.
-inline void canny_and_disp()
-{
-    camera_fb_t* fb = nullptr;
-
-    // Init screen
-    constexpr uint8_t SCREEN_WIDTH = 128;
-    constexpr uint8_t SCREEN_HEIGHT = 64;
-
-    SSD1306_t screen; // The screen device struct.
-    i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
-    ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    while (true)
-    {
-        // Crop the current frame so that it will fit on the screen.
-        cv::Mat working_frame = lane_detect::get_frame(&fb);
-        if (working_frame.size[0] == 0)
-        {
-            vTaskDelay(1);
-            continue;
-        }
-
-        lane_detect::debug::send_matrix(working_frame);
-        cv::resize(working_frame, working_frame, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
-
-        // Prepare the image for Canny
-        cv::cvtColor(working_frame, working_frame, cv::COLOR_BGR5652GRAY);
-        cv::blur(working_frame, working_frame, cv::Size(3, 3));
-
-        // Run Canny on the image.
-        int lowThresh = 80;
-        int kernSize = 3;
-        cv::Canny(working_frame, working_frame, lowThresh, 4 * lowThresh, kernSize);
-
-        lane_detect::debug::send_matrix(working_frame);
-
-        // Write it to the display.
-        write_bin_mat(screen, working_frame);
-        vTaskDelay(1);
-    }
-}
-
-
 /// @brief Finds the center of the lane in the image.
 /// @param mask The binary image.
 /// @param start_row Based upon our cropping, we know that allot of the image won't
