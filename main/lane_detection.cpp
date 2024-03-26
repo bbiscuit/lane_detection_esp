@@ -14,6 +14,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <algorithm>
 
 
 // Esp imports
@@ -117,63 +118,56 @@ inline void canny_and_disp()
 /// @param start_row Based upon our cropping, we know that allot of the image won't
 /// contain any data. Pass this in, so that we don't waste time considering that
 /// sector of the image.
-/// @return The project center column.
-inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 0)
+/// @return The estimated center column. -1 if it was not found.
+inline int get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 0)
 {
-    //const auto start_tick = xTaskGetTickCount();
+    const auto start_tick = xTaskGetTickCount();
 
-    uint16_t result = 0; // The center column.
-    uint16_t sums[mask.cols] = {0};
-    
-    // Sum up the columns into the "sums" array,
-    for (uint16_t row = start_row; row < mask.rows; row++)
+    std::vector<std::vector<cv::Point2i>> contours;
+    cv::findContours(mask, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    // Find the three largest contours within the mask.
+    const size_t num_contours = contours.size();
+    if (num_contours < 3)
     {
-        for (uint16_t col = 0; col < mask.cols; col++)
-        {
-            sums[col] += mask.at<uint8_t>(row, col);
-        }
+        return -1;
     }
 
-    // Split the image into two halves -- the left half should contain the left dotted line,
-    // the right half should contain the right solid line.
-    const uint8_t half = (mask.cols >> 1);
+    // Sort the contours by their area.
+    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point2i>& a, const std::vector<cv::Point2i>& b){
+        cv::Rect2i a_rect = cv::boundingRect(a);
+        cv::Rect2i b_rect = cv::boundingRect(b);
 
-    // Find the max of that which is on the left side of the image. Call that the dotted line.
-    uint16_t dotted_col = 0;
-    uint16_t max = 0;
+        return a_rect.area() > b_rect.area();
+    });
 
-    for (uint16_t col = 0; col < half; col++)
+    // Find the average of the distance between the centerline
+    const cv::Rect2i bold_line = cv::boundingRect(contours[0]); // The largest contour in the image; presumed to be the white line.
+    const cv::Rect2i a = cv::boundingRect(contours[1]);
+    const cv::Rect2i b = cv::boundingRect(contours[2]);
+
+    const int bold_x = bold_line.x + (bold_line.width >> 1);
+    const int a_x = a.x + (a.width >> 1);
+    const int b_x = b.x + (b.width >> 1);
+
+    const int dist_a = bold_x - a_x;
+    const int dist_b = bold_x - b_x;
+
+    if (dist_a < 0 || dist_b < 0)
     {
-        const uint16_t val = sums[col];
-        if (val > max)
-        {
-            max = val;
-            dotted_col = col;
-        }
+        return -1;
     }
 
-    // Find the max of that which is on the right side of the image. Call that the solid line.
-    uint16_t solid_col = 0;
-    max = 0;
+    const int center_a = a_x + (dist_a >> 1);
+    const int center_b = b_x + (dist_b >> 1);
 
-    for (uint16_t col = half; col < mask.cols; col++)
-    {
-        const uint16_t val = sums[col];
-        if (val > max)
-        {
-            max = val;
-            solid_col = col;
-        }
-    }
+    const int center = ((center_a + center_b) >> 1);
 
-    // The center of the lane is the average of the right and left lines.
-    result = ((dotted_col + solid_col) >> 1);
+    const auto end_tick = xTaskGetTickCount();
 
-    //const auto end_tick = xTaskGetTickCount();
+    //printf("Ticks for lane cntr detection: %ld\n", (end_tick - start_tick));
 
-    //printf("Ticks for get_lane_center: %ld\n", (end_tick - start_tick));
-
-    return result;
+    return center;
 }
 
 
@@ -260,7 +254,7 @@ inline void thresh_and_disp()
 
         // Write it to the display.
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
-        lane_detect::debug::send_matrix(thresh);
+        //lane_detect::debug::send_matrix(thresh);
         write_bin_mat(screen, thresh);
 
         //const auto end_tick = xTaskGetTickCount();
