@@ -131,6 +131,12 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 }
 
 
+/// @brief Crops a captured frame based upon cropping parameters.
+/// @param frame The frame to crop. Modified.
+/// @param top The number of pixels on the top to crop off.
+/// @param bottom The number of pixels on the bottom to crop off.
+/// @param left The number of pixels on the left to crop off.
+/// @param right The number of pixels on the right to crop off.
 inline void apply_cropping(
     cv::Mat& frame, 
     const uint16_t top, 
