@@ -173,6 +173,40 @@ inline std::vector<cv::Point2i> get_solid_line(const cv::Mat1b& mask)
 }
 
 
+/// @brief Gets the slope through the solid line.
+/// @param contour The contour of the solid line.
+/// @return The slope.
+inline int get_slope(const std::vector<cv::Point2i>& contour)
+{
+    // Find the furthest left and furthest right point.
+    cv::Point2i leftmost(1000, 1000);
+    cv::Point2i rightmost(-1, -1);
+
+    for (const auto& point : contour)
+    {
+        // Check for leftmost
+        if (point.x < leftmost.x)
+        {
+            leftmost = point;
+        }
+
+        // Check for rightmost
+        if (point.x > rightmost.x)
+        {
+            rightmost = point;
+        }
+    }
+
+
+    // Since we know that the solid line is approximately "line-shaped," an approximation
+    // of the slope should be just rise over run with these.
+    const int rise = leftmost.y - rightmost.y;
+    const int run = leftmost.x - rightmost.x;
+
+    return rise/run;
+}
+
+
 /// @brief Crops a captured frame based upon cropping parameters.
 /// @param frame The frame to crop. Modified.
 /// @param top The number of pixels on the top to crop off.
@@ -260,6 +294,8 @@ inline void main_loop()
 
         const auto solid_line_rect = cv::boundingRect(solid_line);
         const auto solid_line_col = solid_line_rect.x + (solid_line_rect.width >> 1);
+
+        const auto slope = get_slope(solid_line);
 
         printf("solid %d\n", solid_line_col);
 
