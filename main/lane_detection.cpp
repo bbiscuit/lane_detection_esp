@@ -310,7 +310,10 @@ inline void main_loop()
         //lane_detect::debug::send_matrix(thresh);
 
         write_bin_mat(screen, thresh);
-        std::vector<std::string> disp = {std::string("solid x: ") + std::to_string(solid_line_col)};
+        std::vector<std::string> disp = {
+            std::string("solid x: ") + std::to_string(solid_line_col),
+            std::string("slope: ") + std::to_string(slope)
+        };
         write_val_lcd(screen, disp);
 
         //const auto end_tick = xTaskGetTickCount();
