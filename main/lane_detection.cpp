@@ -68,6 +68,19 @@ void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat, const int vert_bar
 }
 
 
+/// @brief Writes a parameter to the LCD screen.
+/// @param screen The screen to write to.
+/// @param lines The lines to write to the screen.
+void write_val_lcd(SSD1306_t& screen, std::vector<std::string>& lines)
+{
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        std::string& str = lines[i];
+        ssd1306_display_text(&screen, i, str.data(), str.size(), false);
+    }
+}
+
+
 /// @brief Finds the center of the lane in the image.
 /// @param mask The binary image.
 /// @param start_row Based upon our cropping, we know that allot of the image won't
@@ -260,6 +273,8 @@ inline void main_loop()
         //lane_detect::debug::send_matrix(thresh);
 
         write_bin_mat(screen, thresh);
+        std::vector<std::string> disp = {std::string("solid x: ") + std::to_string(solid_line_col)};
+        write_val_lcd(screen, disp);
 
         //const auto end_tick = xTaskGetTickCount();
         //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));
