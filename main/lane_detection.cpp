@@ -14,6 +14,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <algorithm>
 
 
 // Esp imports
@@ -52,13 +53,14 @@ void app_main(void);
 /// @brief Writes a binary matrix to a provided LCD screen.
 /// @param screen The LCD screen to write to.
 /// @param bin_mat The binary matrix to write.
-void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat)
+void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat, const int vert_bar = -1)
 {
     for (uint8_t row = 0; row < bin_mat.rows; row++)
     {
         for (uint8_t col = 0; col < bin_mat.cols; col++)
         {
-            bool invert = (0 == bin_mat.at<uint8_t>(row, col));
+
+            const bool invert = (0 == bin_mat.at<uint8_t>(row, col));
             _ssd1306_pixel(&screen, col, row, invert);
         }
     }
@@ -131,6 +133,36 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 }
 
 
+/// @brief Finds the location of the solid line.
+/// @param mask The binary image.
+/// @return The column of the solid line.
+inline int get_solid_line_loc(const cv::Mat1b& mask)
+{
+    // Get the contours.
+    std::vector<std::vector<cv::Point2i>> contours;
+    cv::findContours(mask, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    if (0 == contours.size())
+    {
+        return -1;
+    }
+
+    // Find the largest contour, assume that's the solid line.
+    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point2i>& a, const std::vector<cv::Point2i>& b)
+    {
+        const cv::Rect2i a_rect = cv::boundingRect(a);
+        const cv::Rect2i b_rect = cv::boundingRect(b);
+
+        return a_rect.area() > b_rect.area();
+    });
+    const auto& solid_line = contours[0];
+
+    // Return the x position.
+    const auto solid_rect = cv::boundingRect(solid_line);
+    return (solid_rect.x + (solid_rect.width >> 1));
+}
+
+
 /// @brief Crops a captured frame based upon cropping parameters.
 /// @param frame The frame to crop. Modified.
 /// @param top The number of pixels on the top to crop off.
@@ -194,7 +226,7 @@ inline void main_loop()
             continue;
         }
 
-        lane_detect::debug::send_matrix(working_frame);
+        //lane_detect::debug::send_matrix(working_frame);
         //const auto start_tick = xTaskGetTickCount();
         
         // Get into the right color space for thresholding.
@@ -210,15 +242,23 @@ inline void main_loop()
         // Perform the threshold.
         const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
         const auto high = cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val);
-        cv::Mat thresh;
+        cv::Mat1b thresh;
         cv::inRange(hsv, low, high, thresh);
 
-        const uint8_t center_col = get_lane_center(thresh, top_cropping);
-        printf("center %d\n", center_col);
+        //const uint8_t center_col = get_lane_center(thresh, top_cropping);
+        const auto solid_line_col = get_solid_line_loc(thresh);
+        printf("solid %d\n", solid_line_col);
 
+        // Draw a solid line where the line has been detected.
+        if (-1 != solid_line_col) 
+        {
+            cv::line(thresh, cv::Point2i(solid_line_col, 0), cv::Point2i(solid_line_col, thresh.rows), 0xff);
+        }
+        
         // Write it to the display.
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
-        lane_detect::debug::send_matrix(thresh);
+        //lane_detect::debug::send_matrix(thresh);
+
         write_bin_mat(screen, thresh);
 
         //const auto end_tick = xTaskGetTickCount();
