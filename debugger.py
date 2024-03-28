@@ -11,6 +11,7 @@ import sys
 thresh_frame = None
 
 detected_center: int = -1
+detected_outside_line: int = -1
 
 def disp_threshold_frame(win_name: str, settings: dict):
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger. 
@@ -55,7 +56,7 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
     so that it can be intelligently processed."""
 
-    global detected_center
+    global detected_outside_line
 
     # Busy-wait until we recieve the start bit (1)
     while True:
@@ -73,6 +74,13 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
                             if s.read() == b'r':
                                 print('Read center line.')
                                 detected_center = int(s.readline().decode())
+        if s.read() == b's':
+            if s.read() == b'o':
+                if s.read() == b'l':
+                    if s.read() == b'i':
+                        if s.read() == b'd':
+                            detected_outside_line = int(s.readline().decode())
+                            print(f'Read solid line loc: {detected_outside_line}')
     
     # Read the 32-bit number of rows
     rows = int(s.read(size=4).decode(), base=16)
