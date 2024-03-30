@@ -289,11 +289,11 @@ inline void main_loop()
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
         //lane_detect::debug::send_matrix(thresh);
 
-        lane_detect::write_bin_mat(screen, thresh);
+        lane_detect::lcd_draw_matrix(screen, thresh);
         std::vector<std::string> disp = {
             std::string("slope: ") + std::to_string(slope)
         };
-        lane_detect::write_val_lcd(screen, disp);
+        lane_detect::lcd_draw_string(screen, disp);
 
         //const auto end_tick = xTaskGetTickCount();
         //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));

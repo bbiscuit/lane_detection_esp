@@ -4,7 +4,7 @@
 /// @brief Writes a parameter to the LCD screen.
 /// @param screen The screen to write to.
 /// @param lines The lines to write to the screen.
-void lane_detect::write_val_lcd(SSD1306_t& screen, std::vector<std::string>& lines)
+void lane_detect::lcd_draw_string(SSD1306_t& screen, std::vector<std::string>& lines)
 {
     for (size_t i = 0; i < lines.size(); i++)
     {
@@ -17,7 +17,7 @@ void lane_detect::write_val_lcd(SSD1306_t& screen, std::vector<std::string>& lin
 /// @brief Writes a binary matrix to a provided LCD screen.
 /// @param screen The LCD screen to write to.
 /// @param bin_mat The binary matrix to write.
-void lane_detect::write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat, const int vert_bar)
+void lane_detect::lcd_draw_matrix(SSD1306_t& screen, const cv::Mat& bin_mat, const int vert_bar)
 {
     for (uint8_t row = 0; row < bin_mat.rows; row++)
     {
