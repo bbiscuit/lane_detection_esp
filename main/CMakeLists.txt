@@ -3,7 +3,7 @@ idf_component_register(
             lane_detection.cpp
             camera_task.cpp
             debugging.cpp
-            
+            lcd.cpp
         INCLUDE_DIRS
             .
             opencv/
