@@ -31,6 +31,5 @@ namespace lane_detect
     /// @brief Writes an OpenCV matrix to the screen.
     /// @param screen The screen to write to.
     /// @param bin_mat The matrix to write. Should be a binary mask.
-    /// @param vert_bar If this is a positive value, writes a vertical bar in one column on the screen.
-    void lcd_draw_matrix(SSD1306_t& screen, const cv::Mat& bin_mat, const int vert_bar = -1);
+    void lcd_draw_matrix(SSD1306_t& screen, const cv::Mat& bin_mat);
 }
