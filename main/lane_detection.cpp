@@ -203,7 +203,17 @@ inline float get_slope(const std::vector<cv::Point2i>& contour)
     const float rise = leftmost.y - rightmost.y;
     const float run = leftmost.x - rightmost.x;
 
-    return rise/run;
+    float slope;
+    if (run != 0)
+    {
+        slope = rise/run;
+    }
+    else
+    {
+        slope = INFINITY;
+    }
+
+    return slope;
 }
 
 
