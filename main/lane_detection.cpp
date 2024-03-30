@@ -146,10 +146,10 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 }
 
 
-/// @brief Finds the location of the solid line.
+/// @brief Finds the contour of the solid line, assumed to be the largest contour in the given mask.
 /// @param mask The binary image.
-/// @return The column of the solid line.
-inline int get_solid_line_loc(const cv::Mat1b& mask)
+/// @return The contour of the solid line.
+inline std::vector<cv::Point2i> get_solid_line(const cv::Mat1b& mask)
 {
     // Get the contours.
     std::vector<std::vector<cv::Point2i>> contours;
@@ -157,7 +157,7 @@ inline int get_solid_line_loc(const cv::Mat1b& mask)
 
     if (0 == contours.size())
     {
-        return -1;
+        return std::vector<cv::Point2i>();
     }
 
     // Find the largest contour, assume that's the solid line.
@@ -169,10 +169,51 @@ inline int get_solid_line_loc(const cv::Mat1b& mask)
         return a_rect.area() > b_rect.area();
     });
     const auto& solid_line = contours[0];
+    return solid_line;
+}
 
-    // Return the x position.
-    const auto solid_rect = cv::boundingRect(solid_line);
-    return (solid_rect.x + (solid_rect.width >> 1));
+
+/// @brief Gets the slope through the solid line.
+/// @param contour The contour of the solid line.
+/// @return The slope.
+inline float get_slope(const std::vector<cv::Point2i>& contour)
+{
+    // Find the furthest left and furthest right point.
+    cv::Point2i leftmost(INT_MAX, 0);
+    cv::Point2i rightmost(INT_MIN, 0);
+
+    for (const auto& point : contour)
+    {
+        // Check for leftmost
+        if (point.x < leftmost.x)
+        {
+            leftmost = point;
+        }
+
+        // Check for rightmost
+        if (point.x > rightmost.x)
+        {
+            rightmost = point;
+        }
+    }
+
+
+    // Since we know that the solid line is approximately "line-shaped," an approximation
+    // of the slope should be just rise over run with these.
+    const float rise = leftmost.y - rightmost.y;
+    const float run = leftmost.x - rightmost.x;
+
+    float slope;
+    if (run != 0)
+    {
+        slope = rise/run;
+    }
+    else
+    {
+        slope = INFINITY;
+    }
+
+    return slope;
 }
 
 
@@ -259,7 +300,13 @@ inline void main_loop()
         cv::inRange(hsv, low, high, thresh);
 
         //const uint8_t center_col = get_lane_center(thresh, top_cropping);
-        const auto solid_line_col = get_solid_line_loc(thresh);
+        const auto solid_line = get_solid_line(thresh);
+
+        const auto solid_line_rect = cv::boundingRect(solid_line);
+        const auto solid_line_col = solid_line_rect.x + (solid_line_rect.width >> 1);
+
+        const auto slope = get_slope(solid_line);
+
         printf("solid %d\n", solid_line_col);
 
         // Draw a solid line where the line has been detected.
@@ -273,7 +320,9 @@ inline void main_loop()
         //lane_detect::debug::send_matrix(thresh);
 
         write_bin_mat(screen, thresh);
-        std::vector<std::string> disp = {std::string("solid x: ") + std::to_string(solid_line_col)};
+        std::vector<std::string> disp = {
+            std::string("slope: ") + std::to_string(slope)
+        };
         write_val_lcd(screen, disp);
 
         //const auto end_tick = xTaskGetTickCount();
