@@ -176,11 +176,11 @@ inline std::vector<cv::Point2i> get_solid_line(const cv::Mat1b& mask)
 /// @brief Gets the slope through the solid line.
 /// @param contour The contour of the solid line.
 /// @return The slope.
-inline int get_slope(const std::vector<cv::Point2i>& contour)
+inline float get_slope(const std::vector<cv::Point2i>& contour)
 {
     // Find the furthest left and furthest right point.
-    cv::Point2i leftmost(1000, 1000);
-    cv::Point2i rightmost(-1, -1);
+    cv::Point2i leftmost(INT_MAX, 0);
+    cv::Point2i rightmost(INT_MIN, 0);
 
     for (const auto& point : contour)
     {
@@ -200,8 +200,8 @@ inline int get_slope(const std::vector<cv::Point2i>& contour)
 
     // Since we know that the solid line is approximately "line-shaped," an approximation
     // of the slope should be just rise over run with these.
-    const int rise = leftmost.y - rightmost.y;
-    const int run = leftmost.x - rightmost.x;
+    const float rise = leftmost.y - rightmost.y;
+    const float run = leftmost.x - rightmost.x;
 
     return rise/run;
 }
@@ -311,7 +311,6 @@ inline void main_loop()
 
         write_bin_mat(screen, thresh);
         std::vector<std::string> disp = {
-            std::string("solid x: ") + std::to_string(solid_line_col),
             std::string("slope: ") + std::to_string(slope)
         };
         write_val_lcd(screen, disp);
