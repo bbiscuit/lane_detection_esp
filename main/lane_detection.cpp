@@ -38,6 +38,7 @@
 #include "camera_task.h"
 #include "debugging.h"
 #include "params.h"
+#include "lcd.h"
 
 
 static char TAG[]="lane_detection";
@@ -47,37 +48,6 @@ static char TAG[]="lane_detection";
 // even though C++ mangles the function name.
 extern "C" {
 void app_main(void);
-}
-
-
-/// @brief Writes a binary matrix to a provided LCD screen.
-/// @param screen The LCD screen to write to.
-/// @param bin_mat The binary matrix to write.
-void write_bin_mat(SSD1306_t& screen, const cv::Mat& bin_mat, const int vert_bar = -1)
-{
-    for (uint8_t row = 0; row < bin_mat.rows; row++)
-    {
-        for (uint8_t col = 0; col < bin_mat.cols; col++)
-        {
-
-            const bool invert = (0 == bin_mat.at<uint8_t>(row, col));
-            _ssd1306_pixel(&screen, col, row, invert);
-        }
-    }
-    ssd1306_show_buffer(&screen);
-}
-
-
-/// @brief Writes a parameter to the LCD screen.
-/// @param screen The screen to write to.
-/// @param lines The lines to write to the screen.
-void write_val_lcd(SSD1306_t& screen, std::vector<std::string>& lines)
-{
-    for (size_t i = 0; i < lines.size(); i++)
-    {
-        std::string& str = lines[i];
-        ssd1306_display_text(&screen, i, str.data(), str.size(), false);
-    }
 }
 
 
@@ -319,11 +289,11 @@ inline void main_loop()
         cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
         //lane_detect::debug::send_matrix(thresh);
 
-        write_bin_mat(screen, thresh);
+        lane_detect::lcd_draw_matrix(screen, thresh);
         std::vector<std::string> disp = {
             std::string("slope: ") + std::to_string(slope)
         };
-        write_val_lcd(screen, disp);
+        lane_detect::lcd_draw_string(screen, disp);
 
         //const auto end_tick = xTaskGetTickCount();
         //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));
