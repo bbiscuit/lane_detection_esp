@@ -50,6 +50,8 @@ extern "C" {
 void app_main(void);
 }
 
+using contour_t = std::vector<cv::Point2i>;
+
 
 /// @brief Finds the center of the lane in the image.
 /// @param mask The binary image.
@@ -119,19 +121,19 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 /// @brief Finds the contour of the solid line, assumed to be the largest contour in the given mask.
 /// @param mask The binary image.
 /// @return The contour of the solid line.
-inline std::vector<cv::Point2i> get_solid_line(const cv::Mat1b& mask)
+inline contour_t get_solid_line(const cv::Mat1b& mask)
 {
     // Get the contours.
-    std::vector<std::vector<cv::Point2i>> contours;
+    std::vector<contour_t> contours;
     cv::findContours(mask, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
     if (0 == contours.size())
     {
-        return std::vector<cv::Point2i>();
+        return contour_t();
     }
 
     // Find the largest contour, assume that's the solid line.
-    std::sort(contours.begin(), contours.end(), [](const std::vector<cv::Point2i>& a, const std::vector<cv::Point2i>& b)
+    std::sort(contours.begin(), contours.end(), [](const contour_t& a, const contour_t& b)
     {
         const cv::Rect2i a_rect = cv::boundingRect(a);
         const cv::Rect2i b_rect = cv::boundingRect(b);
@@ -146,7 +148,7 @@ inline std::vector<cv::Point2i> get_solid_line(const cv::Mat1b& mask)
 /// @brief Gets the slope through the solid line.
 /// @param contour The contour of the solid line.
 /// @return The slope.
-inline float get_slope(const std::vector<cv::Point2i>& contour)
+inline float get_slope(const contour_t& contour)
 {
     // Find the furthest left and furthest right point.
     cv::Point2i leftmost(INT_MAX, 0);
