@@ -57,6 +57,7 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     so that it can be intelligently processed."""
 
     global detected_outside_line
+    global detected_center
 
     # Busy-wait until we recieve the start bit (1)
     while True:
@@ -136,7 +137,7 @@ def main_loop(s: serial.Serial, settings: dict):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
 
                 # If we have read a center, draw it in read on the image.
-                if detected_center != 0:
+                if detected_center != -1:
                     cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
 
                 # Blow it up so that it's easier to see.
