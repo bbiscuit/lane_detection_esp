@@ -52,6 +52,38 @@ def disp_thresh_frame(win_name: str, settings: dict):
         cv2.imshow(win_name, working_frame)
 
 
+def setup_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
+    """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
+
+    thresh_color_min = settings['thresh_color_min']
+    thresh_color_max = settings['thresh_color_max']
+    cropping = settings['cropping']
+
+    def on_trackbar(val, color_to_update, dim):
+        color_to_update[dim] = val
+        disp_thresh_frame(window_name, settings)
+    
+    cv2.namedWindow(window_name)
+    cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
+    cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
+    cv2.createTrackbar("Min Value", window_name, thresh_color_min["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value"))
+    
+    cv2.createTrackbar("Max Hue", window_name, thresh_color_max["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue"))
+    cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
+    cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
+
+    def cropping_callback(val, crop_settings: dict, crop_direction: str):
+        """The callback for trackbars related to image cropping."""
+        crop_settings[crop_direction] = val
+        disp_thresh_frame(window_name, settings)
+
+    # Create cropping trackbars.
+    cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top'))
+    cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
+    cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
+    cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
+
+
 def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
     so that it can be intelligently processed."""
@@ -177,38 +209,6 @@ def main_loop(s: serial.Serial, settings: dict):
         # Exit if the user hits "enter."
         if key_v == 13:
             break
-
-
-def setup_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
-    """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
-
-    thresh_color_min = settings['thresh_color_min']
-    thresh_color_max = settings['thresh_color_max']
-    cropping = settings['cropping']
-
-    def on_trackbar(val, color_to_update, dim):
-        color_to_update[dim] = val
-        disp_thresh_frame(window_name, settings)
-    
-    cv2.namedWindow(window_name)
-    cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
-    cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
-    cv2.createTrackbar("Min Value", window_name, thresh_color_min["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value"))
-    
-    cv2.createTrackbar("Max Hue", window_name, thresh_color_max["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue"))
-    cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
-    cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
-
-    def cropping_callback(val, crop_settings: dict, crop_direction: str):
-        """The callback for trackbars related to image cropping."""
-        crop_settings[crop_direction] = val
-        disp_thresh_frame(window_name, settings)
-
-    # Create cropping trackbars.
-    cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top'))
-    cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
-    cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
-    cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
 
 
 def load_settings(filename: str) -> dict:
