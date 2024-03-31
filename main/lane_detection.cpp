@@ -229,18 +229,56 @@ inline void apply_cropping(
 }
 
 
+void outside_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, cv::Point2i& center_point, float& slope)
+{
+    apply_cropping(hsv, outside_cropping_top, outside_cropping_bottom, outside_cropping_left, outside_cropping_right);
+
+    const auto low = cv::Scalar(outside_thresh_min_hue, outside_thresh_min_sat, outside_thresh_min_val);
+    const auto high = cv::Scalar(outside_thresh_max_hue, outside_thresh_max_sat, outside_thresh_max_val);
+    cv::inRange(hsv, low, high, thresh);
+
+    const auto solid_line = get_solid_line(thresh);
+    if (0 == solid_line.size())
+    {
+        center_point.x = -1;
+        center_point.y = -1;
+        slope = NAN;
+    }
+    else
+    {
+        const auto solid_line_rect = cv::boundingRect(solid_line);
+        center_point.x = solid_line_rect.x + (solid_line_rect.width >> 1);
+        center_point.y = solid_line_rect.y + (solid_line_rect.height >> 1);
+
+        cv::line(thresh, cv::Point2i(center_point.x, 0), cv::Point2i(center_point.x, thresh.rows), 0xff);
+
+        slope = get_slope(solid_line);
+    }
+
+
+}
+
+void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope)
+{
+    cv::resize(outside_thresh, outside_thresh, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
+    lane_detect::lcd_draw_matrix(screen, outside_thresh);
+
+    std::vector<std::string> disp = {
+        std::string("slope: ") + std::to_string(outside_line_slope)
+    };
+    lane_detect::lcd_draw_string(screen, disp);
+}
+
+
 /// @brief The main driver loop.
 inline void main_loop()
 {
     camera_fb_t* fb = nullptr;
 
     // Init screen
-    constexpr uint8_t SCREEN_WIDTH = 128;
-    constexpr uint8_t SCREEN_HEIGHT = 64;
-
     SSD1306_t screen; // The screen device struct.
     i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
-    ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+    ssd1306_init(&screen, lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT);
 
     while (true)
     {
@@ -261,41 +299,14 @@ inline void main_loop()
         cv::Mat hsv;
         cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
 
-        // Add a black rectangle over parts of the image which we don't want to be considered
-        // in the threshold.
-        apply_cropping(hsv, outside_cropping_top, outside_cropping_bottom, outside_cropping_left, outside_cropping_right);
+        // Perform detection on the outsid line.
+        cv::Mat1b outside_thresh;
+        cv::Point2i outside_line_center;
+        float outside_line_slope;
+        outside_line_detection(hsv, outside_thresh, outside_line_center, outside_line_slope);
 
-        // Perform the threshold.
-        const auto low = cv::Scalar(outside_thresh_min_hue, outside_thresh_min_sat, outside_thresh_min_val);
-        const auto high = cv::Scalar(outside_thresh_max_hue, outside_thresh_max_sat, outside_thresh_max_val);
-        cv::Mat1b thresh;
-        cv::inRange(hsv, low, high, thresh);
-
-        //const uint8_t center_col = get_lane_center(thresh, outside_cropping_top);
-        const auto solid_line = get_solid_line(thresh);
-
-        const auto solid_line_rect = cv::boundingRect(solid_line);
-        const auto solid_line_col = solid_line_rect.x + (solid_line_rect.width >> 1);
-
-        const auto slope = get_slope(solid_line);
-
-        printf("solid %d\n", solid_line_col);
-
-        // Draw a solid line where the line has been detected.
-        if (-1 != solid_line_col) 
-        {
-            cv::line(thresh, cv::Point2i(solid_line_col, 0), cv::Point2i(solid_line_col, thresh.rows), 0xff);
-        }
-        
-        // Write it to the display.
-        cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
-        //lane_detect::debug::send_matrix(thresh);
-
-        lane_detect::lcd_draw_matrix(screen, thresh);
-        std::vector<std::string> disp = {
-            std::string("slope: ") + std::to_string(slope)
-        };
-        lane_detect::lcd_draw_string(screen, disp);
+        // Write to the screen.
+        output_to_screen(screen, outside_thresh, outside_line_slope);
 
         //const auto end_tick = xTaskGetTickCount();
         //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));

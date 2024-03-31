@@ -22,6 +22,13 @@
 
 namespace lane_detect
 {
+    /// @brief The native width of the screen.
+    constexpr uint8_t SCREEN_WIDTH = 128;
+
+    /// @brief The native heigth of the screen.
+    constexpr uint8_t SCREEN_HEIGHT = 64;
+
+
     /// @brief Writes a number of lines to the LCD screen, from top to bottom.
     /// @param screen The screen to write to.
     /// @param lines The lines to write to the screen.
