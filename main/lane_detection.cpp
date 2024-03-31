@@ -145,6 +145,30 @@ inline contour_t get_solid_line(const cv::Mat1b& mask)
 }
 
 
+inline contour_t get_stop_line(const cv::Mat1b& mask)
+{
+    // Get the contours.
+    std::vector<contour_t> contours;
+    cv::findContours(mask, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    if (0 == contours.size())
+    {
+        return contour_t();
+    }
+
+    // Find the largest contour, assume that's the solid line.
+    std::sort(contours.begin(), contours.end(), [](const contour_t& a, const contour_t& b)
+    {
+        const cv::Rect2i a_rect = cv::boundingRect(a);
+        const cv::Rect2i b_rect = cv::boundingRect(b);
+
+        return a_rect.area() > b_rect.area();
+    });
+    const auto& solid_line = contours[0];
+    return solid_line;
+}
+
+
 /// @brief Gets the slope through the solid line.
 /// @param contour The contour of the solid line.
 /// @return The slope.
@@ -229,6 +253,11 @@ inline void apply_cropping(
 }
 
 
+/// @brief Finds the outside line and extracts parameters.
+/// @param hsv The frame, in HSV, to extract data from.
+/// @param thresh The thresholded frame. Output param.
+/// @param center_point The centerpoint of the detected line. Output param.
+/// @param slope The slope of the detected line. Output param.
 void outside_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, cv::Point2i& center_point, float& slope)
 {
     apply_cropping(hsv, outside_cropping_top, outside_cropping_bottom, outside_cropping_left, outside_cropping_right);
@@ -258,6 +287,27 @@ void outside_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, cv::Point2i& center
 
 }
 
+
+/// @brief Finds the red line and extracts parameters.
+/// @param hsv The frame, in HSV, to extract data from.
+/// @param thresh The threshold frame, Output param.
+/// @param detected Whether or not the red line is "detected." Output param.
+void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
+{
+    apply_cropping(hsv, stop_cropping_top, stop_cropping_bottom, stop_cropping_left, stop_cropping_right);
+
+    const auto low = cv::Scalar(stop_thresh_min_hue, stop_thresh_min_sat, stop_thresh_min_val);
+    const auto high = cv::Scalar(stop_thresh_max_hue, stop_thresh_max_sat, stop_thresh_max_val);
+    cv::inRange(hsv, low, high, thresh);
+
+    const auto stop_line = get_stop_line(thresh);
+}
+
+
+/// @brief Prints data about the detection process to the LCD screen.
+/// @param screen The screen to print to.
+/// @param outside_thresh The threshold matrix of the outside line detection.
+/// @param outside_line_slope The slope of the outside line detection.
 void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope)
 {
     cv::resize(outside_thresh, outside_thresh, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
@@ -300,6 +350,7 @@ inline void main_loop()
         cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
 
         // Perform detection on the outsid line.
+        cv::Mat hsv_outside = hsv.clone();
         cv::Mat1b outside_thresh;
         cv::Point2i outside_line_center;
         float outside_line_slope;
