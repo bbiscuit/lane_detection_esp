@@ -263,15 +263,15 @@ inline void main_loop()
 
         // Add a black rectangle over parts of the image which we don't want to be considered
         // in the threshold.
-        apply_cropping(hsv, top_cropping, bottom_cropping, left_cropping, right_cropping);
+        apply_cropping(hsv, outside_cropping_top, outside_cropping_bottom, outside_cropping_left, outside_cropping_right);
 
         // Perform the threshold.
-        const auto low = cv::Scalar(thresh_min_hue, thresh_min_sat, thresh_min_val);
-        const auto high = cv::Scalar(thresh_max_hue, thresh_max_sat, thresh_max_val);
+        const auto low = cv::Scalar(outside_thresh_min_hue, outside_thresh_min_sat, outside_thresh_min_val);
+        const auto high = cv::Scalar(outside_thresh_max_hue, outside_thresh_max_sat, outside_thresh_max_val);
         cv::Mat1b thresh;
         cv::inRange(hsv, low, high, thresh);
 
-        //const uint8_t center_col = get_lane_center(thresh, top_cropping);
+        //const uint8_t center_col = get_lane_center(thresh, outside_cropping_top);
         const auto solid_line = get_solid_line(thresh);
 
         const auto solid_line_rect = cv::boundingRect(solid_line);
