@@ -40,6 +40,6 @@
             "saturation": 168,
             "value": 247
         },
-        "min_detect_area": 47
+        "min_detect_area": 32
     }
 }

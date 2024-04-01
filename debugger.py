@@ -95,7 +95,35 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     MAX_MIN_DETECT_AREA = 100 # Arbitrarily chosen
 
     def area_detection_callback(val: int, settings: dict):
+        global thresholded_frame
+
         settings['min_detect_area'] = val
+
+        if thresholded_frame is not None:
+            # Find the contours of the thresholded frame.
+            contours = cv2.findContours(thresholded_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Find the largest contour, area-wise.
+            def bounding_rect_area(contour):
+                _, _, w, h = cv2.boundingRect(contour)
+                return int(w) * int(h) # Just to make absolutely sure this is an int mult.
+
+            contours = sorted(contours, key=bounding_rect_area, reverse=True)
+            if 0 == len(contours):
+                return
+            largest_contour = contours[0]
+
+            # If the area of the largest contour is greater than the minimum detection area, then
+            # tell the user that.
+            area = bounding_rect_area(largest_contour)
+            if area > val:
+                pass
+
+            # Otherwise, tell the user that the largest contour is not greater than the minimum
+            # detection area.
+            else:
+                pass
+
 
     cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
 
