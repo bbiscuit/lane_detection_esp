@@ -13,9 +13,10 @@ thresh_frame = None
 detected_center: int = -1
 detected_outside_line: int = -1
 
-def disp_thresh_frame(win_name: str, settings: dict):
+def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
-    It will also scale the frame to that which is in the settings before displaying."""
+    It will also scale the frame to that which is in the settings before displaying. Returns the frame
+    post-threshold, or None if a frame has not been loaded to threshold yet."""
     global thresh_frame
 
     if thresh_frame is not None:
@@ -50,6 +51,9 @@ def disp_thresh_frame(win_name: str, settings: dict):
         working_frame = cv2.inRange(working_frame, low, high)
 
         cv2.imshow(win_name, working_frame)
+        return working_frame
+    else:
+        return None
 
 
 def setup_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
@@ -59,9 +63,13 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     thresh_color_max = settings['thresh_color_max']
     cropping = settings['cropping']
 
+    thresholded_frame: cv2.Mat = None
+
     def on_trackbar(val, color_to_update, dim):
+        global thresholded_frame
+
         color_to_update[dim] = val
-        disp_thresh_frame(window_name, settings)
+        thresholded_frame = disp_thresh_frame(window_name, settings)
 
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
