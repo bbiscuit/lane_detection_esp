@@ -83,6 +83,12 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
     cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
 
+    # Create area detection trackbars.
+    MAX_MIN_DETECT_AREA = 100 # Arbitrarily chosen
+    def area_detection_callback(val: int, settings: dict):
+        pass
+    cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
+
 
 def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,

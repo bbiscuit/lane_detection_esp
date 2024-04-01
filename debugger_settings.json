@@ -20,7 +20,8 @@
             "hue": 179,
             "saturation": 255,
             "value": 255
-        }
+        },
+        "min_detect_area": 1
     },
     "stop_thresh": {
         "cropping": {
@@ -38,6 +39,7 @@
             "hue": 22,
             "saturation": 168,
             "value": 247
-        }
+        },
+        "min_detect_area": 1
     }
 }
