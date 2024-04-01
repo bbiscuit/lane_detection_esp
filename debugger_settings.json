@@ -21,7 +21,7 @@
             "saturation": 255,
             "value": 255
         },
-        "min_detect_area": 9
+        "min_detect_area": 139
     },
     "stop_thresh": {
         "cropping": {
@@ -32,14 +32,14 @@
         },
         "thresh_color_min": {
             "hue": 0,
-            "saturation": 55,
+            "saturation": 49,
             "value": 156
         },
         "thresh_color_max": {
             "hue": 29,
-            "saturation": 168,
+            "saturation": 159,
             "value": 247
         },
-        "min_detect_area": 2
+        "min_detect_area": 7
     }
 }

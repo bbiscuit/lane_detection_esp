@@ -52,6 +52,27 @@ def disp_thresh_frame(win_name: str, settings: dict):
         high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
         working_frame = cv2.inRange(working_frame, low, high)
 
+        # Find the contours of the thresholded frame.
+        contours, _ = cv2.findContours(working_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Find the largest contour, area-wise.
+        def bounding_rect_area(contour):
+            _, _, w, h = cv2.boundingRect(contour)
+            return int(w) * int(h) # Just to make absolutely sure this is an int mult.
+
+        contours = sorted(contours, key=bounding_rect_area, reverse=True)
+        if 0 == len(contours):
+            return
+        largest_contour = contours[0]
+
+        # Tell the user whether the area of the largest contour is greater than the minimum
+        # for detection.
+        area = bounding_rect_area(largest_contour)
+        detected = area >= settings['min_detect_area']
+
+        FONT_SIZE = 0.25
+        cv2.putText(working_frame, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
+
         cv2.imshow(win_name, working_frame)
         frame_threshed = working_frame
 
@@ -90,35 +111,11 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
 
     # Create area detection trackbars.
-    MAX_MIN_DETECT_AREA = 100 # Arbitrarily chosen
+    MAX_MIN_DETECT_AREA = 96*96 # The whole screen
 
     def area_detection_callback(val: int, settings: dict):
         global frame_threshed
-
         settings['min_detect_area'] = val
-
-        if frame_threshed is not None:
-            # Find the contours of the thresholded frame.
-            contours, _ = cv2.findContours(frame_threshed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-            # Find the largest contour, area-wise.
-            def bounding_rect_area(contour):
-                _, _, w, h = cv2.boundingRect(contour)
-                return int(w) * int(h) # Just to make absolutely sure this is an int mult.
-
-            contours = sorted(contours, key=bounding_rect_area, reverse=True)
-            if 0 == len(contours):
-                return
-            largest_contour = contours[0]
-
-            # Tell the user whether the area of the largest contour is greater than the minimum
-            # for detection.
-            area = bounding_rect_area(largest_contour)
-            detected = area >= val
-
-            FONT_SIZE = 0.25
-            cv2.putText(frame_threshed, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
-            cv2.imshow(window_name, frame_threshed)
 
     cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
 
@@ -214,6 +211,10 @@ def main_loop(s: serial.Serial, settings: dict):
                 # Blow it up so that it's easier to see.
                 big_frame = cv2.resize(frame, (settings['scaled_frame_size']['height'], settings['scaled_frame_size']['width']))
                 cv2.imshow('Pre-processed Frame', big_frame)
+
+                # Display the big frame also in HSV.
+                big_frame = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
+                cv2.imshow('HSV Frame', big_frame)
 
                 # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't been set up yet; therefore,
                 # set it up.
