@@ -43,6 +43,9 @@
 
 static char TAG[]="lane_detection";
 
+// If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
+#define CALIBRATION_MODE 1
+
 
 // This is necessary because it allows ESP-IDF to find the main function,
 // even though C++ mangles the function name.
@@ -340,7 +343,10 @@ inline void main_loop()
             continue;
         }
 
-        //lane_detect::debug::send_matrix(working_frame);
+        #if(CALIBRATION_MODE == 1)
+        lane_detect::debug::send_matrix(working_frame);
+        #endif
+
         //const auto start_tick = xTaskGetTickCount();
         
         // Get into the right color space for thresholding.

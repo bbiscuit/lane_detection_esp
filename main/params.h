@@ -22,14 +22,14 @@ constexpr uint8_t outside_cropping_left = 60;
 constexpr uint8_t outside_cropping_right = 0;
 
 constexpr uint8_t stop_thresh_min_hue = 0;
-constexpr uint8_t stop_thresh_min_sat = 0;
-constexpr uint8_t stop_thresh_min_val = 229;
+constexpr uint8_t stop_thresh_min_sat = 55;
+constexpr uint8_t stop_thresh_min_val = 156;
 
-constexpr uint8_t stop_thresh_max_hue = 18;
-constexpr uint8_t stop_thresh_max_sat = 255;
-constexpr uint8_t stop_thresh_max_val = 255;
+constexpr uint8_t stop_thresh_max_hue = 22;
+constexpr uint8_t stop_thresh_max_sat = 168;
+constexpr uint8_t stop_thresh_max_val = 247;
 
-constexpr uint8_t stop_cropping_top = 48;
+constexpr uint8_t stop_cropping_top = 49;
 constexpr uint8_t stop_cropping_bottom = 0;
 constexpr uint8_t stop_cropping_left = 0;
 constexpr uint8_t stop_cropping_right = 0;

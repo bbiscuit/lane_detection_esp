@@ -26,18 +26,18 @@
         "cropping": {
             "left": 0,
             "right": 0,
-            "top": 48,
+            "top": 49,
             "bottom": 0
         },
         "thresh_color_min": {
             "hue": 0,
-            "saturation": 0,
-            "value": 229
+            "saturation": 55,
+            "value": 156
         },
         "thresh_color_max": {
-            "hue": 18,
-            "saturation": 255,
-            "value": 255
+            "hue": 22,
+            "saturation": 168,
+            "value": 247
         }
     }
 }
