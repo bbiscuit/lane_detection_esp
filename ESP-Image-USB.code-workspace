@@ -69,6 +69,8 @@
             "thread": "cpp",
             "cinttypes": "cpp",
             "typeinfo": "cpp"
-        }
+        },
+        "files.trimTrailingWhitespace": true,
+        "files.trimFinalNewlines": true
     }
 }

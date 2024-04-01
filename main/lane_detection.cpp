@@ -43,6 +43,9 @@
 
 static char TAG[]="lane_detection";
 
+// If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
+#define CALIBRATION_MODE 0
+
 
 // This is necessary because it allows ESP-IDF to find the main function,
 // even though C++ mangles the function name.
@@ -65,7 +68,7 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 
     uint16_t result = 0; // The center column.
     uint16_t sums[mask.cols] = {0};
-    
+
     // Sum up the columns into the "sums" array,
     for (uint16_t row = start_row; row < mask.rows; row++)
     {
@@ -145,6 +148,30 @@ inline contour_t get_solid_line(const cv::Mat1b& mask)
 }
 
 
+inline contour_t get_stop_line(const cv::Mat1b& mask)
+{
+    // Get the contours.
+    std::vector<contour_t> contours;
+    cv::findContours(mask, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    if (0 == contours.size())
+    {
+        return contour_t();
+    }
+
+    // Find the largest contour, assume that's the solid line.
+    std::sort(contours.begin(), contours.end(), [](const contour_t& a, const contour_t& b)
+    {
+        const cv::Rect2i a_rect = cv::boundingRect(a);
+        const cv::Rect2i b_rect = cv::boundingRect(b);
+
+        return a_rect.area() > b_rect.area();
+    });
+    const auto& solid_line = contours[0];
+    return solid_line;
+}
+
+
 /// @brief Gets the slope through the solid line.
 /// @param contour The contour of the solid line.
 /// @return The slope.
@@ -196,10 +223,10 @@ inline float get_slope(const contour_t& contour)
 /// @param left The number of pixels on the left to crop off.
 /// @param right The number of pixels on the right to crop off.
 inline void apply_cropping(
-    cv::Mat& frame, 
-    const uint16_t top, 
-    const uint16_t bottom, 
-    const uint16_t left, 
+    cv::Mat& frame,
+    const uint16_t top,
+    const uint16_t bottom,
+    const uint16_t left,
     const uint16_t right
 )
 {
@@ -229,18 +256,85 @@ inline void apply_cropping(
 }
 
 
+/// @brief Finds the outside line and extracts parameters.
+/// @param hsv The frame, in HSV, to extract data from.
+/// @param thresh The thresholded frame. Output param.
+/// @param center_point The centerpoint of the detected line. Output param.
+/// @param slope The slope of the detected line. Output param.
+void outside_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, cv::Point2i& center_point, float& slope)
+{
+    apply_cropping(hsv, outside_cropping_top, outside_cropping_bottom, outside_cropping_left, outside_cropping_right);
+
+    const auto low = cv::Scalar(outside_thresh_min_hue, outside_thresh_min_sat, outside_thresh_min_val);
+    const auto high = cv::Scalar(outside_thresh_max_hue, outside_thresh_max_sat, outside_thresh_max_val);
+    cv::inRange(hsv, low, high, thresh);
+
+    const auto solid_line = get_solid_line(thresh);
+    if (0 == solid_line.size())
+    {
+        center_point.x = -1;
+        center_point.y = -1;
+        slope = NAN;
+    }
+    else
+    {
+        const auto solid_line_rect = cv::boundingRect(solid_line);
+        center_point.x = solid_line_rect.x + (solid_line_rect.width >> 1);
+        center_point.y = solid_line_rect.y + (solid_line_rect.height >> 1);
+
+        cv::line(thresh, cv::Point2i(center_point.x, 0), cv::Point2i(center_point.x, thresh.rows), 0xff);
+
+        slope = get_slope(solid_line);
+    }
+
+
+}
+
+
+/// @brief Finds the red line and extracts parameters.
+/// @param hsv The frame, in HSV, to extract data from.
+/// @param thresh The threshold frame, Output param.
+/// @param detected Whether or not the red line is "detected." Output param.
+void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
+{
+    apply_cropping(hsv, stop_cropping_top, stop_cropping_bottom, stop_cropping_left, stop_cropping_right);
+
+    const auto low = cv::Scalar(stop_thresh_min_hue, stop_thresh_min_sat, stop_thresh_min_val);
+    const auto high = cv::Scalar(stop_thresh_max_hue, stop_thresh_max_sat, stop_thresh_max_val);
+    cv::inRange(hsv, low, high, thresh);
+
+    const auto stop_line = get_stop_line(thresh);
+
+    const auto stop_line_rect = cv::boundingRect(stop_line);
+    detected = stop_line_rect.area() >= stop_min_detect_area;
+}
+
+
+/// @brief Prints data about the detection process to the LCD screen.
+/// @param screen The screen to print to.
+/// @param outside_thresh The threshold matrix of the outside line detection.
+/// @param outside_line_slope The slope of the outside line detection.
+void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope)
+{
+    cv::resize(outside_thresh, outside_thresh, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
+    lane_detect::lcd_draw_matrix(screen, outside_thresh);
+
+    std::vector<std::string> disp = {
+        std::string("slope: ") + std::to_string(outside_line_slope)
+    };
+    lane_detect::lcd_draw_string(screen, disp);
+}
+
+
 /// @brief The main driver loop.
 inline void main_loop()
 {
     camera_fb_t* fb = nullptr;
 
     // Init screen
-    constexpr uint8_t SCREEN_WIDTH = 128;
-    constexpr uint8_t SCREEN_HEIGHT = 64;
-
     SSD1306_t screen; // The screen device struct.
     i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
-    ssd1306_init(&screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+    ssd1306_init(&screen, lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT);
 
     while (true)
     {
@@ -252,50 +346,33 @@ inline void main_loop()
             continue;
         }
 
-        //lane_detect::debug::send_matrix(working_frame);
+        #if(CALIBRATION_MODE == 1)
+        lane_detect::debug::send_matrix(working_frame);
+        #endif
+
         //const auto start_tick = xTaskGetTickCount();
-        
+
         // Get into the right color space for thresholding.
         cv::Mat bgr;
         cv::cvtColor(working_frame, bgr, cv::COLOR_BGR5652BGR);
         cv::Mat hsv;
         cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV, 3);
 
-        // Add a black rectangle over parts of the image which we don't want to be considered
-        // in the threshold.
-        apply_cropping(hsv, outside_cropping_top, outside_cropping_bottom, outside_cropping_left, outside_cropping_right);
+        // Perform detection on the outsid line.
+        cv::Mat hsv_outside = hsv.clone();
+        cv::Mat1b outside_thresh;
+        cv::Point2i outside_line_center;
+        float outside_line_slope;
+        outside_line_detection(hsv_outside, outside_thresh, outside_line_center, outside_line_slope);
 
-        // Perform the threshold.
-        const auto low = cv::Scalar(outside_thresh_min_hue, outside_thresh_min_sat, outside_thresh_min_val);
-        const auto high = cv::Scalar(outside_thresh_max_hue, outside_thresh_max_sat, outside_thresh_max_val);
-        cv::Mat1b thresh;
-        cv::inRange(hsv, low, high, thresh);
+        // Perform detection on the stop line.
+        cv::Mat1b stop_thresh;
+        bool detected;
+        stop_line_detection(hsv, stop_thresh, detected);
 
-        //const uint8_t center_col = get_lane_center(thresh, outside_cropping_top);
-        const auto solid_line = get_solid_line(thresh);
-
-        const auto solid_line_rect = cv::boundingRect(solid_line);
-        const auto solid_line_col = solid_line_rect.x + (solid_line_rect.width >> 1);
-
-        const auto slope = get_slope(solid_line);
-
-        printf("solid %d\n", solid_line_col);
-
-        // Draw a solid line where the line has been detected.
-        if (-1 != solid_line_col) 
-        {
-            cv::line(thresh, cv::Point2i(solid_line_col, 0), cv::Point2i(solid_line_col, thresh.rows), 0xff);
-        }
-        
-        // Write it to the display.
-        cv::resize(thresh, thresh, cv::Size(SCREEN_WIDTH, SCREEN_HEIGHT));
-        //lane_detect::debug::send_matrix(thresh);
-
-        lane_detect::lcd_draw_matrix(screen, thresh);
-        std::vector<std::string> disp = {
-            std::string("slope: ") + std::to_string(slope)
-        };
-        lane_detect::lcd_draw_string(screen, disp);
+        // Write to the screen.
+        cv::Mat1b unified_thresh = outside_thresh | stop_thresh;
+        output_to_screen(screen, unified_thresh, outside_line_slope);
 
         //const auto end_tick = xTaskGetTickCount();
         //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));
