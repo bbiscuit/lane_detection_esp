@@ -314,12 +314,17 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
 /// @param screen The screen to print to.
 /// @param outside_thresh The threshold matrix of the outside line detection.
 /// @param outside_line_slope The slope of the outside line detection.
-void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope)
+/// @param delta_ticks The number of ticks it took to process the frame, for the FPS calc.
+void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope, TickType_t delta_ticks)
 {
     cv::resize(outside_thresh, outside_thresh, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
     lane_detect::lcd_draw_matrix(screen, outside_thresh);
 
+    // Calculate the FPS.
+    const auto framerate = static_cast<double>(configTICK_RATE_HZ) / delta_ticks; // How many seconds it took to process a frame.
+
     std::vector<std::string> disp = {
+        std::to_string(framerate) + std::string(" FPS"),
         std::string("slope: ") + std::to_string(outside_line_slope)
     };
     lane_detect::lcd_draw_string(screen, disp);
@@ -350,7 +355,7 @@ inline void main_loop()
         lane_detect::debug::send_matrix(working_frame);
         #endif
 
-        //const auto start_tick = xTaskGetTickCount();
+        const auto start_tick = xTaskGetTickCount();
 
         // Get into the right color space for thresholding.
         cv::Mat bgr;
@@ -372,10 +377,11 @@ inline void main_loop()
 
         // Write to the screen.
         cv::Mat1b unified_thresh = outside_thresh | stop_thresh;
-        output_to_screen(screen, unified_thresh, outside_line_slope);
 
-        //const auto end_tick = xTaskGetTickCount();
-        //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));
+        const auto end_tick = xTaskGetTickCount();
+        const auto delta_ticks = end_tick - start_tick;
+
+        output_to_screen(screen, unified_thresh, outside_line_slope, delta_ticks);
 
         vTaskDelay(1);
     }
