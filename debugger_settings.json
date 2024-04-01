@@ -21,7 +21,7 @@
             "saturation": 255,
             "value": 255
         },
-        "min_detect_area": 1
+        "min_detect_area": 9
     },
     "stop_thresh": {
         "cropping": {
@@ -40,6 +40,6 @@
             "saturation": 168,
             "value": 247
         },
-        "min_detect_area": 1
+        "min_detect_area": 47
     }
 }

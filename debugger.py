@@ -14,7 +14,7 @@ detected_center: int = -1
 detected_outside_line: int = -1
 
 def disp_thresh_frame(win_name: str, settings: dict):
-    """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger. 
+    """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
     It will also scale the frame to that which is in the settings before displaying."""
     global thresh_frame
 
@@ -36,7 +36,7 @@ def disp_thresh_frame(win_name: str, settings: dict):
         left_cropping = cropping['left']
         if left_cropping > 0:
             cv2.rectangle(working_frame, (0, 0), (left_cropping, rows), (0, 0, 0), -1)
-        
+
         right_cropping = cropping['right']
         if right_cropping > 0:
             cv2.rectangle(working_frame, (cols, 0), (cols - right_cropping, rows), (0, 0, 0), -1)
@@ -62,12 +62,12 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     def on_trackbar(val, color_to_update, dim):
         color_to_update[dim] = val
         disp_thresh_frame(window_name, settings)
-    
+
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
     cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
     cv2.createTrackbar("Min Value", window_name, thresh_color_min["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value"))
-    
+
     cv2.createTrackbar("Max Hue", window_name, thresh_color_max["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue"))
     cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
     cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
@@ -85,8 +85,10 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
 
     # Create area detection trackbars.
     MAX_MIN_DETECT_AREA = 100 # Arbitrarily chosen
+
     def area_detection_callback(val: int, settings: dict):
-        pass
+        settings['min_detect_area'] = val
+
     cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
 
 
@@ -120,7 +122,7 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
                         if s.read() == b'd':
                             detected_outside_line = int(s.readline().decode())
                             print(f'Read solid line loc: {detected_outside_line}')
-    
+
     # Read the 32-bit number of rows
     rows = int(s.read(size=4).decode(), base=16)
     cols = int(s.read(size=4).decode(), base=16)
@@ -201,7 +203,7 @@ def main_loop(s: serial.Serial, settings: dict):
             # without any changes.
             elif 'CV_8UC1' == frame_type or 'CV_8U__' == frame_type:
                 cv2.imshow('Mask', frame)
-            
+
             elif 'CV_8UC3' == frame_type:
                 cv2.imshow('8-bit Color', frame)
 
