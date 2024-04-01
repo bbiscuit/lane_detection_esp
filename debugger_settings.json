@@ -27,7 +27,7 @@
         "cropping": {
             "left": 0,
             "right": 0,
-            "top": 49,
+            "top": 48,
             "bottom": 0
         },
         "thresh_color_min": {
@@ -36,10 +36,10 @@
             "value": 156
         },
         "thresh_color_max": {
-            "hue": 22,
+            "hue": 29,
             "saturation": 168,
             "value": 247
         },
-        "min_detect_area": 32
+        "min_detect_area": 2
     }
 }

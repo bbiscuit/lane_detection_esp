@@ -8,19 +8,21 @@ import functools
 import json
 import sys
 
-thresh_frame = None
+frame_to_thresh: cv2.Mat = None
+frame_threshed: cv2.Mat = None
 
 detected_center: int = -1
 detected_outside_line: int = -1
 
-def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
+def disp_thresh_frame(win_name: str, settings: dict):
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
-    It will also scale the frame to that which is in the settings before displaying. Returns the frame
-    post-threshold, or None if a frame has not been loaded to threshold yet."""
-    global thresh_frame
+    It will also scale the frame to that which is in the settings before displaying. The frame post-threshold
+    is written into the 'frame_threshed' global variable.."""
+    global frame_to_thresh
+    global frame_threshed
 
-    if thresh_frame is not None:
-        working_frame = thresh_frame.copy()
+    if frame_to_thresh is not None:
+        working_frame = frame_to_thresh.copy()
 
         # Perform cropping of the image based upon the cropping parameters.
         cropping = settings['cropping']
@@ -51,9 +53,7 @@ def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
         working_frame = cv2.inRange(working_frame, low, high)
 
         cv2.imshow(win_name, working_frame)
-        return working_frame
-    else:
-        return None
+        frame_threshed = working_frame
 
 
 def setup_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
@@ -63,13 +63,11 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     thresh_color_max = settings['thresh_color_max']
     cropping = settings['cropping']
 
-    thresholded_frame: cv2.Mat = None
-
     def on_trackbar(val, color_to_update, dim):
-        global thresholded_frame
+        global frame_threshed
 
         color_to_update[dim] = val
-        thresholded_frame = disp_thresh_frame(window_name, settings)
+        disp_thresh_frame(window_name, settings)
 
     cv2.namedWindow(window_name)
     cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
@@ -95,13 +93,13 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     MAX_MIN_DETECT_AREA = 100 # Arbitrarily chosen
 
     def area_detection_callback(val: int, settings: dict):
-        global thresholded_frame
+        global frame_threshed
 
         settings['min_detect_area'] = val
 
-        if thresholded_frame is not None:
+        if frame_threshed is not None:
             # Find the contours of the thresholded frame.
-            contours = cv2.findContours(thresholded_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv2.findContours(frame_threshed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
             # Find the largest contour, area-wise.
             def bounding_rect_area(contour):
@@ -113,17 +111,14 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
                 return
             largest_contour = contours[0]
 
-            # If the area of the largest contour is greater than the minimum detection area, then
-            # tell the user that.
+            # Tell the user whether the area of the largest contour is greater than the minimum
+            # for detection.
             area = bounding_rect_area(largest_contour)
-            if area > val:
-                pass
+            detected = area >= val
 
-            # Otherwise, tell the user that the largest contour is not greater than the minimum
-            # detection area.
-            else:
-                pass
-
+            FONT_SIZE = 0.25
+            cv2.putText(frame_threshed, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
+            cv2.imshow(window_name, frame_threshed)
 
     cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
 
@@ -190,7 +185,7 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
 
 def main_loop(s: serial.Serial, settings: dict):
 
-    global thresh_frame
+    global frame_to_thresh
 
     print("Starting main loop...")
     # Create the thread for reading the frame.
@@ -225,12 +220,12 @@ def main_loop(s: serial.Serial, settings: dict):
                 OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
                 STOP_THRESH_WINNAME = 'Stop Line Thresholding'
 
-                if thresh_frame is None:
+                if frame_to_thresh is None:
                     setup_thresh_window(OUTSIDE_THRESH_WINNAME, frame.shape[0], frame.shape[1], settings['outside_thresh'])
                     setup_thresh_window(STOP_THRESH_WINNAME, frame.shape[0], frame.shape[1], settings['stop_thresh'])
 
                 frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-                thresh_frame = frame_hsv
+                frame_to_thresh = frame_hsv
 
                 disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
                 disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
