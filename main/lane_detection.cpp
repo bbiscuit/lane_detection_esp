@@ -279,6 +279,16 @@ void outside_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, cv::Point2i& center
     else
     {
         const auto solid_line_rect = cv::boundingRect(solid_line);
+
+        // If there is less area than the min. expected, don't record as a detection
+        if (solid_line_rect.area() < outside_min_detect_area)
+        {
+            center_point.x = -1;
+            center_point.y = -1;
+            slope = NAN;
+        }
+
+
         center_point.x = solid_line_rect.x + (solid_line_rect.width >> 1);
         center_point.y = solid_line_rect.y + (solid_line_rect.height >> 1);
 
