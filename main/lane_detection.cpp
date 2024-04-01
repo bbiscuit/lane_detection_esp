@@ -44,7 +44,7 @@
 static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
-#define CALIBRATION_MODE 1
+#define CALIBRATION_MODE 0
 
 
 // This is necessary because it allows ESP-IDF to find the main function,
@@ -68,7 +68,7 @@ inline uint8_t get_lane_center(const cv::Mat1b& mask, const uint8_t start_row = 
 
     uint16_t result = 0; // The center column.
     uint16_t sums[mask.cols] = {0};
-    
+
     // Sum up the columns into the "sums" array,
     for (uint16_t row = start_row; row < mask.rows; row++)
     {
@@ -223,10 +223,10 @@ inline float get_slope(const contour_t& contour)
 /// @param left The number of pixels on the left to crop off.
 /// @param right The number of pixels on the right to crop off.
 inline void apply_cropping(
-    cv::Mat& frame, 
-    const uint16_t top, 
-    const uint16_t bottom, 
-    const uint16_t left, 
+    cv::Mat& frame,
+    const uint16_t top,
+    const uint16_t bottom,
+    const uint16_t left,
     const uint16_t right
 )
 {
@@ -304,6 +304,9 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
     cv::inRange(hsv, low, high, thresh);
 
     const auto stop_line = get_stop_line(thresh);
+
+    const auto stop_line_rect = cv::boundingRect(stop_line);
+    detected = stop_line_rect.area() >= stop_min_detect_area;
 }
 
 
@@ -348,7 +351,7 @@ inline void main_loop()
         #endif
 
         //const auto start_tick = xTaskGetTickCount();
-        
+
         // Get into the right color space for thresholding.
         cv::Mat bgr;
         cv::cvtColor(working_frame, bgr, cv::COLOR_BGR5652BGR);
@@ -360,10 +363,16 @@ inline void main_loop()
         cv::Mat1b outside_thresh;
         cv::Point2i outside_line_center;
         float outside_line_slope;
-        outside_line_detection(hsv, outside_thresh, outside_line_center, outside_line_slope);
+        outside_line_detection(hsv_outside, outside_thresh, outside_line_center, outside_line_slope);
+
+        // Perform detection on the stop line.
+        cv::Mat1b stop_thresh;
+        bool detected;
+        stop_line_detection(hsv, stop_thresh, detected);
 
         // Write to the screen.
-        output_to_screen(screen, outside_thresh, outside_line_slope);
+        cv::Mat1b unified_thresh = outside_thresh | stop_thresh;
+        output_to_screen(screen, unified_thresh, outside_line_slope);
 
         //const auto end_tick = xTaskGetTickCount();
         //printf("Ticks for thresh_and_disp: %ld\n", (end_tick - start_tick));
