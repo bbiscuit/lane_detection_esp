@@ -42,6 +42,10 @@ def main():
     print(f'constexpr uint8_t outside_cropping_right = {outside_cropping["right"]};')
     print()
 
+    # Print the min detection area parameters.
+    print(f'constexpr uint16_t outside_min_detect_area = {settings["outside_thresh"]["min_detect_area"]};')
+    print()
+
     # Print the min colors.
     print(f'constexpr uint8_t stop_thresh_min_hue = {settings["stop_thresh"]["thresh_color_min"]["hue"]};')
     print(f'constexpr uint8_t stop_thresh_min_sat = {settings["stop_thresh"]["thresh_color_min"]["saturation"]};')
@@ -62,6 +66,9 @@ def main():
     print(f'constexpr uint8_t stop_cropping_right = {stop_cropping["right"]};')
     print()
 
+    # Print the min detection area parameter.
+    print(f'constexpr uint16_t stop_min_detect_area = {settings["outside_thresh"]["min_detect_area"]};')
+    print()
 
 if __name__ == '__main__':
     main()
