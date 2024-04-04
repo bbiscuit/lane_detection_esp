@@ -14,6 +14,65 @@ frame_threshed: cv2.Mat = None
 detected_center: int = -1
 detected_outside_line: int = -1
 
+
+def get_largest_contour(img: cv2.Mat):
+    """Finds the contours in the image and returns the largest."""
+    contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Find the largest contour, area-wise.
+    def bounding_rect_area(contour):
+        _, _, w, h = cv2.boundingRect(contour)
+        return int(w) * int(h) # Just to make absolutely sure this is an int mult.
+
+    contours = sorted(contours, key=bounding_rect_area, reverse=True)
+    if 0 == len(contours):
+        return None
+    return contours[0]
+
+
+def setup_white_line_loc_calibration_window(settings: dict):
+    """Sets up a window which, when clicked, records detected data about the white line.
+    This is taken to be its "natural state," where the line should be. These values are
+    then compared on the ESP-32 with the detected values, and changes are made such that
+    the line is closer to the ideal."""
+
+    WIN_ROWS = 255
+    WIN_COLS = WIN_ROWS*2
+    WIN_TITLE = 'Outside Line Calibration'
+    BUTTON_TEXT = 'Click this window to record values.'
+
+    def on_click(event, x, y, flags, param):
+        # We only care about the click event.
+        if event != cv2.EVENT_LBUTTONDOWN:
+            return
+
+        # If we don't yet have an image to extract data from, report and exit.
+        if frame_threshed is None:
+            print('Have not receieved data yet.')
+            return
+
+        # Get the largest contour.
+        line = get_largest_contour(frame_threshed)
+        if line is None:
+            print('Did not find a line.')
+            return
+
+        # Extract data from the bounding-rect and write it to the settings.
+        x_line, y_line, w_line, h_line = cv2.boundingRect(line)
+        settings['outside_line_data']['x'] = x_line + (w_line // 2)
+        print('Recorded line data.')
+
+
+    img = np.ones((WIN_ROWS, WIN_COLS, 3), np.uint8) * 255
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.5
+    color = (255, 0, 255)  # BGR color
+    thickness = 1
+    img = cv2.putText(img, BUTTON_TEXT, (50, 50), font, fontScale, color, thickness, cv2.LINE_AA)
+    cv2.imshow(WIN_TITLE, img)
+    cv2.setMouseCallback(WIN_TITLE, on_click)
+
+
 def disp_thresh_frame(win_name: str, settings: dict):
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
     It will also scale the frame to that which is in the settings before displaying. The frame post-threshold
@@ -278,6 +337,7 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
+    setup_white_line_loc_calibration_window(settings)
     main_loop(s, settings)
 
     # Write-back convenience values to settings.
