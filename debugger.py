@@ -9,7 +9,8 @@ import json
 import sys
 
 frame_to_thresh: cv2.Mat = None
-frame_threshed: cv2.Mat = None
+frame_threshed_outside: cv2.Mat = None
+frame_threshed_stop: cv2.Mat = None
 
 detected_center: int = -1
 detected_outside_line: int = -1
@@ -18,6 +19,8 @@ detected_outside_line: int = -1
 def get_largest_contour(img: cv2.Mat):
     """Finds the contours in the image and returns the largest."""
     contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    cv2.imshow('Test', img)
 
     # Find the largest contour, area-wise.
     def bounding_rect_area(contour):
@@ -47,12 +50,12 @@ def setup_white_line_loc_calibration_window(settings: dict):
             return
 
         # If we don't yet have an image to extract data from, report and exit.
-        if frame_threshed is None:
+        if frame_threshed_outside is None:
             print('Have not receieved data yet.')
             return
 
         # Get the largest contour.
-        line = get_largest_contour(frame_threshed)
+        line = get_largest_contour(frame_threshed_outside)
         if line is None:
             print('Did not find a line.')
             return
@@ -73,12 +76,11 @@ def setup_white_line_loc_calibration_window(settings: dict):
     cv2.setMouseCallback(WIN_TITLE, on_click)
 
 
-def disp_thresh_frame(win_name: str, settings: dict):
+def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
     It will also scale the frame to that which is in the settings before displaying. The frame post-threshold
     is written into the 'frame_threshed' global variable.."""
     global frame_to_thresh
-    global frame_threshed
 
     if frame_to_thresh is not None:
         working_frame = frame_to_thresh.copy()
@@ -133,7 +135,7 @@ def disp_thresh_frame(win_name: str, settings: dict):
         cv2.putText(working_frame, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
 
         cv2.imshow(win_name, working_frame)
-        frame_threshed = working_frame
+        return working_frame
 
 
 def setup_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
@@ -144,8 +146,6 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     cropping = settings['cropping']
 
     def on_trackbar(val, color_to_update, dim):
-        global frame_threshed
-
         color_to_update[dim] = val
         disp_thresh_frame(window_name, settings)
 
@@ -173,7 +173,6 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     MAX_MIN_DETECT_AREA = 96*96 # The whole screen
 
     def area_detection_callback(val: int, settings: dict):
-        global frame_threshed
         settings['min_detect_area'] = val
 
     cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
@@ -242,6 +241,8 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
 def main_loop(s: serial.Serial, settings: dict):
 
     global frame_to_thresh
+    global frame_threshed_outside
+    global frame_threshed_stop
 
     print("Starting main loop...")
     # Create the thread for reading the frame.
@@ -287,8 +288,8 @@ def main_loop(s: serial.Serial, settings: dict):
                 frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 frame_to_thresh = frame_hsv
 
-                disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
-                disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
+                frame_threshed_outside = disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
+                frame_threshed_stop = disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
