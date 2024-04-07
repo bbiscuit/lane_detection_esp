@@ -237,11 +237,43 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     return (mat_data, type)
 
 
-def main_loop(s: serial.Serial, settings: dict):
-
+def handle_received_frame_8uc2(recv_frame: cv2.Mat, settings: dict):
+    """Handles the reception of a frame of type 8UC2 from the ESP32."""
     global frame_to_thresh
     global frame_threshed_outside
     global frame_threshed_stop
+
+    # Convert to a color that we can process.
+    frame = cv2.cvtColor(recv_frame, cv2.COLOR_BGR5652BGR)
+
+    # If we have read a center, draw it in read on the image.
+    if detected_center != -1:
+        cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
+
+    # Blow it up so that it's easier to see.
+    big_frame = cv2.resize(frame, (settings['scaled_frame_size']['height'], settings['scaled_frame_size']['width']))
+    cv2.imshow('Pre-processed Frame', big_frame)
+
+    # Display the big frame also in HSV.
+    big_frame = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
+    cv2.imshow('HSV Frame', big_frame)
+
+    # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't been set up yet; therefore,
+    # set it up.
+    OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
+    STOP_THRESH_WINNAME = 'Stop Line Thresholding'
+
+    if frame_to_thresh is None:
+        setup_thresh_window(OUTSIDE_THRESH_WINNAME, frame.shape[0], frame.shape[1], settings['outside_thresh'])
+        setup_thresh_window(STOP_THRESH_WINNAME, frame.shape[0], frame.shape[1], settings['stop_thresh'])
+
+    frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    frame_to_thresh = frame_hsv
+
+    frame_threshed_outside = disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
+    frame_threshed_stop = disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
+
+def main_loop(s: serial.Serial, settings: dict):
 
     print("Starting main loop...")
     # Create the thread for reading the frame.
@@ -260,35 +292,7 @@ def main_loop(s: serial.Serial, settings: dict):
 
             # If the received thread was of type CV_8UC2, up it to eight-bit color and display.
             if 'CV_8UC2' == frame_type:
-                # Convert to a color that we can process.
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR5652BGR)
-
-                # If we have read a center, draw it in read on the image.
-                if detected_center != -1:
-                    cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
-
-                # Blow it up so that it's easier to see.
-                big_frame = cv2.resize(frame, (settings['scaled_frame_size']['height'], settings['scaled_frame_size']['width']))
-                cv2.imshow('Pre-processed Frame', big_frame)
-
-                # Display the big frame also in HSV.
-                big_frame = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
-                cv2.imshow('HSV Frame', big_frame)
-
-                # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't been set up yet; therefore,
-                # set it up.
-                OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
-                STOP_THRESH_WINNAME = 'Stop Line Thresholding'
-
-                if frame_to_thresh is None:
-                    setup_thresh_window(OUTSIDE_THRESH_WINNAME, frame.shape[0], frame.shape[1], settings['outside_thresh'])
-                    setup_thresh_window(STOP_THRESH_WINNAME, frame.shape[0], frame.shape[1], settings['stop_thresh'])
-
-                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-                frame_to_thresh = frame_hsv
-
-                frame_threshed_outside = disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
-                frame_threshed_stop = disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
+                handle_received_frame_8uc2(frame, settings)
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
