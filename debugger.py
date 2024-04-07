@@ -20,8 +20,6 @@ def get_largest_contour(img: cv2.Mat):
     """Finds the contours in the image and returns the largest."""
     contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    cv2.imshow('Test', img)
-
     # Find the largest contour, area-wise.
     def bounding_rect_area(contour):
         _, _, w, h = cv2.boundingRect(contour)
@@ -111,7 +109,7 @@ def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
 
         low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
         high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
-        working_frame = cv2.inRange(working_frame, low, high)
+        working_frame: cv2.Mat = cv2.inRange(working_frame, low, high)
 
         # Find the contours of the thresholded frame.
         contours, _ = cv2.findContours(working_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -132,9 +130,10 @@ def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
         detected = area >= settings['min_detect_area']
 
         FONT_SIZE = 0.25
-        cv2.putText(working_frame, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
+        with_text = working_frame.copy()
+        cv2.putText(with_text, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
 
-        cv2.imshow(win_name, working_frame)
+        cv2.imshow(win_name, with_text)
         return working_frame
 
 
