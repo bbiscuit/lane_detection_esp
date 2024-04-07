@@ -9,17 +9,76 @@ import json
 import sys
 
 frame_to_thresh: cv2.Mat = None
-frame_threshed: cv2.Mat = None
+frame_threshed_outside: cv2.Mat = None
+frame_threshed_stop: cv2.Mat = None
 
 detected_center: int = -1
 detected_outside_line: int = -1
 
-def disp_thresh_frame(win_name: str, settings: dict):
+
+def get_largest_contour(img: cv2.Mat):
+    """Finds the contours in the image and returns the largest."""
+    contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Find the largest contour, area-wise.
+    def bounding_rect_area(contour):
+        _, _, w, h = cv2.boundingRect(contour)
+        return int(w) * int(h) # Just to make absolutely sure this is an int mult.
+
+    contours = sorted(contours, key=bounding_rect_area, reverse=True)
+    if 0 == len(contours):
+        return None
+    return contours[0]
+
+
+def setup_white_line_loc_calibration_window(settings: dict):
+    """Sets up a window which, when clicked, records detected data about the white line.
+    This is taken to be its "natural state," where the line should be. These values are
+    then compared on the ESP-32 with the detected values, and changes are made such that
+    the line is closer to the ideal."""
+
+    WIN_ROWS = 255
+    WIN_COLS = WIN_ROWS*2
+    WIN_TITLE = 'Outside Line Calibration'
+    BUTTON_TEXT = 'Click this window to record values.'
+
+    def on_click(event, x, y, flags, param):
+        # We only care about the click event.
+        if event != cv2.EVENT_LBUTTONDOWN:
+            return
+
+        # If we don't yet have an image to extract data from, report and exit.
+        if frame_threshed_outside is None:
+            print('Have not receieved data yet.')
+            return
+
+        # Get the largest contour.
+        line = get_largest_contour(frame_threshed_outside)
+        if line is None:
+            print('Did not find a line.')
+            return
+
+        # Extract data from the bounding-rect and write it to the settings.
+        x_line, y_line, w_line, h_line = cv2.boundingRect(line)
+        settings['outside_line_data']['x'] = x_line + (w_line // 2)
+        print('Recorded line data.')
+
+
+    img = np.ones((WIN_ROWS, WIN_COLS, 3), np.uint8) * 255
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.5
+    color = (255, 0, 255)  # BGR color
+    thickness = 1
+    img = cv2.putText(img, BUTTON_TEXT, (50, 50), font, fontScale, color, thickness, cv2.LINE_AA)
+    cv2.imshow(WIN_TITLE, img)
+    cv2.setMouseCallback(WIN_TITLE, on_click)
+
+
+def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
     """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
     It will also scale the frame to that which is in the settings before displaying. The frame post-threshold
     is written into the 'frame_threshed' global variable.."""
     global frame_to_thresh
-    global frame_threshed
 
     if frame_to_thresh is not None:
         working_frame = frame_to_thresh.copy()
@@ -50,7 +109,7 @@ def disp_thresh_frame(win_name: str, settings: dict):
 
         low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
         high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
-        working_frame = cv2.inRange(working_frame, low, high)
+        working_frame: cv2.Mat = cv2.inRange(working_frame, low, high)
 
         # Find the contours of the thresholded frame.
         contours, _ = cv2.findContours(working_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -71,10 +130,11 @@ def disp_thresh_frame(win_name: str, settings: dict):
         detected = area >= settings['min_detect_area']
 
         FONT_SIZE = 0.25
-        cv2.putText(working_frame, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
+        with_text = working_frame.copy()
+        cv2.putText(with_text, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
 
-        cv2.imshow(win_name, working_frame)
-        frame_threshed = working_frame
+        cv2.imshow(win_name, with_text)
+        return working_frame
 
 
 def setup_thresh_window(window_name: str, native_frame_height: int, native_frame_width: int, settings: dict):
@@ -85,8 +145,6 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     cropping = settings['cropping']
 
     def on_trackbar(val, color_to_update, dim):
-        global frame_threshed
-
         color_to_update[dim] = val
         disp_thresh_frame(window_name, settings)
 
@@ -114,7 +172,6 @@ def setup_thresh_window(window_name: str, native_frame_height: int, native_frame
     MAX_MIN_DETECT_AREA = 96*96 # The whole screen
 
     def area_detection_callback(val: int, settings: dict):
-        global frame_threshed
         settings['min_detect_area'] = val
 
     cv2.createTrackbar('Min Area for Detection', window_name, settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=settings))
@@ -183,6 +240,8 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
 def main_loop(s: serial.Serial, settings: dict):
 
     global frame_to_thresh
+    global frame_threshed_outside
+    global frame_threshed_stop
 
     print("Starting main loop...")
     # Create the thread for reading the frame.
@@ -228,8 +287,8 @@ def main_loop(s: serial.Serial, settings: dict):
                 frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 frame_to_thresh = frame_hsv
 
-                disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
-                disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
+                frame_threshed_outside = disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
+                frame_threshed_stop = disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
 
             # Otherwise if the received frame was a binary mask (CV_8UC1 or CV_8U__), display
             # without any changes.
@@ -278,6 +337,7 @@ def main():
     s.open()
 
     # The BGR threshold for the image.
+    setup_white_line_loc_calibration_window(settings)
     main_loop(s, settings)
 
     # Write-back convenience values to settings.

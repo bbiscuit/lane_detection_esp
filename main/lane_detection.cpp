@@ -44,7 +44,7 @@
 static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
-#define CALIBRATION_MODE 0
+#define CALIBRATION_MODE 1
 
 
 // This is necessary because it allows ESP-IDF to find the main function,
