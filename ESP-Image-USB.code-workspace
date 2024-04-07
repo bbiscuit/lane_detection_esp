@@ -5,6 +5,7 @@
         }
     ],
     "settings": {
+        "pylint.args": ["--extension-pkg-whitelist=cv2", "--generated-members=cv2.*"],
         "files.associations": {
             "array": "cpp",
             "bitset": "cpp",

@@ -1,12 +1,22 @@
-import serial
-import numpy as np
-import cv2
+"""
+The debugger for the lane detection app, used to read ESP32 output as well as configure certain
+settings.
+"""
+
 import time
 import threading
 import queue
 import functools
 import json
 import sys
+import serial
+import numpy as np
+import cv2
+
+LINE_LOC_WIN_ROWS = 255
+LINE_LOC_WIN_COLS = LINE_LOC_WIN_ROWS*2
+LINE_LOC_WIN_TITLE = 'Outside Line Calibration'
+LINE_LOC_BUTTON_TEXT = 'Click this window to record values.'
 
 frame_to_thresh: cv2.Mat = None
 frame_threshed_outside: cv2.Mat = None
@@ -37,12 +47,9 @@ def setup_white_line_loc_calibration_window(settings: dict):
     then compared on the ESP-32 with the detected values, and changes are made such that
     the line is closer to the ideal."""
 
-    WIN_ROWS = 255
-    WIN_COLS = WIN_ROWS*2
-    WIN_TITLE = 'Outside Line Calibration'
-    BUTTON_TEXT = 'Click this window to record values.'
 
-    def on_click(event, x, y, flags, param):
+
+    def on_click(event, _, __, ___, ____):
         # We only care about the click event.
         if event != cv2.EVENT_LBUTTONDOWN:
             return
@@ -59,19 +66,19 @@ def setup_white_line_loc_calibration_window(settings: dict):
             return
 
         # Extract data from the bounding-rect and write it to the settings.
-        x_line, y_line, w_line, h_line = cv2.boundingRect(line)
+        x_line, _, w_line, _ = cv2.boundingRect(line)
         settings['outside_line_data']['x'] = x_line + (w_line // 2)
         print('Recorded line data.')
 
 
-    img = np.ones((WIN_ROWS, WIN_COLS, 3), np.uint8) * 255
+    img = np.ones((LINE_LOC_WIN_ROWS, LINE_LOC_WIN_COLS, 3), np.uint8) * 255
     font = cv2.FONT_HERSHEY_SIMPLEX
     fontScale = 0.5
     color = (255, 0, 255)  # BGR color
     thickness = 1
-    img = cv2.putText(img, BUTTON_TEXT, (50, 50), font, fontScale, color, thickness, cv2.LINE_AA)
-    cv2.imshow(WIN_TITLE, img)
-    cv2.setMouseCallback(WIN_TITLE, on_click)
+    img = cv2.putText(img, LINE_LOC_BUTTON_TEXT, (50, 50), font, fontScale, color, thickness, cv2.LINE_AA)
+    cv2.imshow(LINE_LOC_WIN_TITLE, img)
+    cv2.setMouseCallback(LINE_LOC_WIN_TITLE, on_click)
 
 
 def disp_thresh_frame(win_name: str, settings: dict) -> cv2.Mat:
@@ -212,9 +219,9 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     rows = int(s.read(size=4).decode(), base=16)
     cols = int(s.read(size=4).decode(), base=16)
     channels = int(s.read(size=4).decode(), base=16)
-    type = s.read(size=7).decode()
+    f_type = s.read(size=7).decode()
 
-    print(f'Found mat of size {rows}x{cols}x{channels} of type {type}')
+    print(f'Found mat of size {rows}x{cols}x{channels} of type {f_type}')
 
     # Read the following data as a matrix of integers with the rows/cols vals.
     mat_data = np.zeros((rows, cols, channels), dtype=np.uint8)
@@ -223,18 +230,14 @@ def read_frame(s: serial.Serial) -> tuple[cv2.Mat, str]:
     for row in range(0, rows):
         for col in range(0, cols):
             for channel in range(0, channels):
-                try:
-                    data_bytes = s.read(size=2)
-                except Exception:
-                    return np.zeros((rows, cols, channels), dtype=np.uint8)
-
+                data_bytes = s.read(size=2)
                 mat_data[row, col, channel] = int(data_bytes.decode(), base=16)
 
     post_read = time.time()
     print(f'time: {post_read - pre_read}')
 
     # Return the BGR image.
-    return (mat_data, type)
+    return (mat_data, f_type)
 
 
 def handle_received_frame_8uc2(recv_frame: cv2.Mat, settings: dict):
@@ -273,7 +276,9 @@ def handle_received_frame_8uc2(recv_frame: cv2.Mat, settings: dict):
     frame_threshed_outside = disp_thresh_frame(OUTSIDE_THRESH_WINNAME, settings['outside_thresh'])
     frame_threshed_stop = disp_thresh_frame(STOP_THRESH_WINNAME, settings['stop_thresh'])
 
+
 def main_loop(s: serial.Serial, settings: dict):
+    """The main loop for the debugger, which reads the input and displays windows."""
 
     print("Starting main loop...")
     # Create the thread for reading the frame.
@@ -316,7 +321,7 @@ def main_loop(s: serial.Serial, settings: dict):
 
 def load_settings(filename: str) -> dict:
     """Loads settings for the app from the given json file."""
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding='ascii') as f:
         return json.load(f)
 
 
@@ -345,7 +350,7 @@ def main():
     main_loop(s, settings)
 
     # Write-back convenience values to settings.
-    with open('debugger_settings.json', 'w') as f:
+    with open('debugger_settings.json', 'w', encoding='ascii') as f:
         json.dump(settings, f, indent=4)
 
     s.close()
