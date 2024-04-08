@@ -238,9 +238,6 @@ def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
     so that it can be intelligently processed."""
 
-    global detected_outside_line
-    global detected_center
-
     # Busy-wait until we recieve the start bit (1)
     while True:
         if s.read() == b'S':
@@ -249,21 +246,6 @@ def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
                     if s.read() == b'R':
                         if s.read() == b'T':
                             break
-        if s.read() == b'c':
-            if s.read() == b'e':
-                if s.read() == b'n':
-                    if s.read() == b't':
-                        if s.read() == b'e':
-                            if s.read() == b'r':
-                                print('Read center line.')
-                                detected_center = int(s.readline().decode())
-        if s.read() == b's':
-            if s.read() == b'o':
-                if s.read() == b'l':
-                    if s.read() == b'i':
-                        if s.read() == b'd':
-                            detected_outside_line = int(s.readline().decode())
-                            print(f'Read solid line loc: {detected_outside_line}')
 
     # Read the 32-bit number of rows
     rows = int(s.read(size=4).decode(), base=16)
