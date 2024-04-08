@@ -7,7 +7,7 @@ import json
 def main():
     """The main routine."""
     # Load settings.
-    with open('debugger_settings.json', 'r') as f:
+    with open('debugger_settings.json', 'r', encoding='ascii') as f:
         settings = json.load(f)
 
     # Print the preamble.
