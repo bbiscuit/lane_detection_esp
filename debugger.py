@@ -17,9 +17,9 @@ LINE_LOC_WIN_ROWS = 255
 LINE_LOC_WIN_COLS = LINE_LOC_WIN_ROWS*2
 LINE_LOC_WIN_TITLE = 'Outside Line Calibration'
 LINE_LOC_BUTTON_TEXT = 'Click this window to record values.'
-
-detected_center: int = -1
-detected_outside_line: int = -1
+OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
+STOP_THRESH_WINNAME = 'Stop Line Thresholding'
+MAX_MIN_DETECT_AREA = 96*96 # The minimum detect area for the line areas.
 
 
 def get_largest_contour(img: cv2.Mat):
@@ -51,14 +51,13 @@ class FrameHandler:
         # Convert to a color that we can process.
         frame = cv2.cvtColor(recv_frame, cv2.COLOR_BGR5652BGR)
 
-        # If we have read a center, draw it in read on the image.
-        if detected_center != -1:
-            cv2.line(frame, (detected_center, 0), (detected_center, frame.shape[0]), (0, 0, 255), 5)
-
         # Blow it up so that it's easier to see.
         big_frame = cv2.resize(
             frame,
-            (self.settings['scaled_frame_size']['height'], self.settings['scaled_frame_size']['width'])
+            (
+                self.settings['scaled_frame_size']['height'],
+                self.settings['scaled_frame_size']['width']
+            )
         )
         cv2.imshow('Pre-processed Frame', big_frame)
 
@@ -66,10 +65,9 @@ class FrameHandler:
         big_frame = cv2.cvtColor(big_frame, cv2.COLOR_BGR2HSV)
         cv2.imshow('HSV Frame', big_frame)
 
-        # Display the thresholded frame. If the thresh_frame is None, that means that the frame hasn't
-        # been set up yet; therefore, set it up.
-        OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
-        STOP_THRESH_WINNAME = 'Stop Line Thresholding'
+        # Display the thresholded frame. If the thresh_frame is None, that means that the frame
+        # hasn't been set up yet; therefore, set it up.
+
 
         if self.frame_to_thresh is None:
             self.setup_thresh_window(
@@ -88,8 +86,14 @@ class FrameHandler:
         frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         self.frame_to_thresh = frame_hsv
 
-        self._frame_threshed_outside = self.disp_thresh_frame(OUTSIDE_THRESH_WINNAME, self.settings['outside_thresh'])
-        self._frame_threshed_stop = self.disp_thresh_frame(STOP_THRESH_WINNAME, self.settings['stop_thresh'])
+        self._frame_threshed_outside = self.disp_thresh_frame(
+            OUTSIDE_THRESH_WINNAME,
+            self.settings['outside_thresh']
+        )
+        self._frame_threshed_stop = self.disp_thresh_frame(
+            STOP_THRESH_WINNAME,
+            self.settings['stop_thresh']
+        )
 
 
     def setup_white_line_loc_calibration_window(self):
@@ -127,15 +131,25 @@ class FrameHandler:
         font_scale = 0.5
         color = (255, 0, 255)  # BGR color
         thickness = 1
-        img = cv2.putText(img, LINE_LOC_BUTTON_TEXT, (50, 50), font, font_scale, color, thickness, cv2.LINE_AA)
+        img = cv2.putText(
+            img,
+            LINE_LOC_BUTTON_TEXT,
+            (50, 50),
+            font,
+            font_scale,
+            color,
+            thickness,
+            cv2.LINE_AA
+        )
         cv2.imshow(LINE_LOC_WIN_TITLE, img)
         cv2.setMouseCallback(LINE_LOC_WIN_TITLE, on_click)
 
 
     def disp_thresh_frame(self, win_name: str, thresh_settings: dict) -> cv2.Mat:
-        """Displays a thresholded version of the thresh_frame image, given the parameters set in the debugger.
-        It will also scale the frame to that which is in the settings before displaying. The frame post-threshold
-        is written into the 'frame_threshed' global variable.."""
+        """Displays a thresholded version of the thresh_frame image, given the parameters set in
+        the debugger. It will also scale the frame to that which is in the settings before
+        displaying. The frame post-threshold is written into the 'frame_threshed' global
+        variable."""
 
         if self.frame_to_thresh is not None:
             working_frame = self.frame_to_thresh.copy()
@@ -150,7 +164,13 @@ class FrameHandler:
 
             bottom_cropping = cropping['bottom']
             if bottom_cropping > 0:
-                cv2.rectangle(working_frame, (0, rows), (cols, rows - bottom_cropping), (0, 0, 0), -1)
+                cv2.rectangle(
+                    working_frame,
+                    (0, rows),
+                    (cols, rows - bottom_cropping),
+                    (0, 0, 0),
+                    -1
+                )
 
             left_cropping = cropping['left']
             if left_cropping > 0:
@@ -158,14 +178,28 @@ class FrameHandler:
 
             right_cropping = cropping['right']
             if right_cropping > 0:
-                cv2.rectangle(working_frame, (cols, 0), (cols - right_cropping, rows), (0, 0, 0), -1)
+                cv2.rectangle(
+                    working_frame,
+                    (cols, 0),
+                    (cols - right_cropping, rows),
+                    (0, 0, 0),
+                    -1
+                )
 
             # Perform color thresholding.
             thresh_color_min = thresh_settings['thresh_color_min']
             thresh_color_max = thresh_settings['thresh_color_max']
 
-            low = (thresh_color_min['hue'], thresh_color_min['saturation'], thresh_color_min['value'])
-            high = (thresh_color_max['hue'], thresh_color_max['saturation'], thresh_color_max['value'])
+            low = (
+                thresh_color_min['hue'],
+                thresh_color_min['saturation'],
+                thresh_color_min['value']
+            )
+            high = (
+                thresh_color_max['hue'],
+                thresh_color_max['saturation'],
+                thresh_color_max['value']
+            )
             working_frame: cv2.Mat = cv2.inRange(working_frame, low, high)
 
             # Find the contours of the thresholded frame.
@@ -186,16 +220,30 @@ class FrameHandler:
             area = bounding_rect_area(largest_contour)
             detected = area >= thresh_settings['min_detect_area']
 
-            FONT_SIZE = 0.25
+            font_size = 0.25
             with_text = working_frame.copy()
-            cv2.putText(with_text, f'Detected: {detected}', (0, 30), cv2.FONT_HERSHEY_SIMPLEX, FONT_SIZE, 0xff)
+            cv2.putText(
+                with_text,
+                f'Detected: {detected}',
+                (0, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                font_size,
+                0xff
+            )
 
             cv2.imshow(win_name, with_text)
             return working_frame
 
 
-    def setup_thresh_window(self, window_name: str, native_frame_height: int, native_frame_width: int, thresh_settings: dict):
-        """Sets up the window which has the trackbars for BGR thresholding (for calibration). The settings arg brovided here should be the """
+    def setup_thresh_window(
+            self,
+            window_name: str,
+            native_frame_height: int,
+            native_frame_width: int,
+            thresh_settings: dict
+    ):
+        """Sets up the window which has the trackbars for BGR thresholding (for calibration).
+        The settings arg brovided here should be the """
 
         thresh_color_min = thresh_settings['thresh_color_min']
         thresh_color_max = thresh_settings['thresh_color_max']
@@ -206,13 +254,49 @@ class FrameHandler:
             self.disp_thresh_frame(window_name, thresh_settings)
 
         cv2.namedWindow(window_name)
-        cv2.createTrackbar("Min Hue", window_name, thresh_color_min["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue"))
-        cv2.createTrackbar("Min Saturation", window_name, thresh_color_min["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation"))
-        cv2.createTrackbar("Min Value", window_name, thresh_color_min["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value"))
+        cv2.createTrackbar(
+            "Min Hue",
+            window_name,
+            thresh_color_min["hue"],
+            179,
+            functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue")
+        )
+        cv2.createTrackbar(
+            "Min Saturation",
+            window_name,
+            thresh_color_min["saturation"],
+            255,
+            functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation")
+        )
+        cv2.createTrackbar(
+            "Min Value",
+            window_name,
+            thresh_color_min["value"],
+            255,
+            functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value")
+        )
 
-        cv2.createTrackbar("Max Hue", window_name, thresh_color_max["hue"], 179, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue"))
-        cv2.createTrackbar("Max Saturation", window_name, thresh_color_max["saturation"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation"))
-        cv2.createTrackbar("Max Value", window_name, thresh_color_max["value"], 255, functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value"))
+        cv2.createTrackbar(
+            "Max Hue",
+            window_name,
+            thresh_color_max["hue"],
+            179,
+            functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue")
+        )
+        cv2.createTrackbar(
+            "Max Saturation",
+            window_name,
+            thresh_color_max["saturation"],
+            255,
+            functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation")
+        )
+        cv2.createTrackbar(
+            "Max Value",
+            window_name,
+            thresh_color_max["value"],
+            255,
+            functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value")
+        )
 
         def cropping_callback(val, crop_settings: dict, crop_direction: str):
             """The callback for trackbars related to image cropping."""
@@ -220,18 +304,48 @@ class FrameHandler:
             self.disp_thresh_frame(window_name, thresh_settings)
 
         # Create cropping trackbars.
-        cv2.createTrackbar('Top cropping', window_name, cropping['top'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top'))
-        cv2.createTrackbar('Left cropping', window_name, cropping['left'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left'))
-        cv2.createTrackbar('Right cropping', window_name, cropping['right'], native_frame_width, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right'))
-        cv2.createTrackbar('Bottom cropping', window_name, cropping['bottom'], native_frame_height, functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom'))
+        cv2.createTrackbar(
+            'Top cropping',
+            window_name,
+            cropping['top'],
+            native_frame_height,
+            functools.partial(cropping_callback, crop_settings=cropping, crop_direction='top')
+        )
+        cv2.createTrackbar(
+            'Left cropping',
+            window_name,
+            cropping['left'],
+            native_frame_width,
+            functools.partial(cropping_callback, crop_settings=cropping, crop_direction='left')
+        )
+        cv2.createTrackbar(
+            'Right cropping',
+            window_name,
+            cropping['right'],
+            native_frame_width,
+            functools.partial(cropping_callback, crop_settings=cropping, crop_direction='right')
+        )
+        cv2.createTrackbar(
+            'Bottom cropping',
+            window_name,
+            cropping['bottom'],
+            native_frame_height,
+            functools.partial(cropping_callback, crop_settings=cropping, crop_direction='bottom')
+        )
 
         # Create area detection trackbars.
-        MAX_MIN_DETECT_AREA = 96*96 # The whole screen
+
 
         def area_detection_callback(val: int, settings: dict):
             settings['min_detect_area'] = val
 
-        cv2.createTrackbar('Min Area for Detection', window_name, thresh_settings['min_detect_area'], MAX_MIN_DETECT_AREA, functools.partial(area_detection_callback, settings=thresh_settings))
+        cv2.createTrackbar(
+            'Min Area for Detection',
+            window_name,
+            thresh_settings['min_detect_area'],
+            MAX_MIN_DETECT_AREA,
+            functools.partial(area_detection_callback, settings=thresh_settings)
+        )
 
 
 def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
