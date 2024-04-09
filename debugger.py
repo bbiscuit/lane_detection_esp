@@ -102,8 +102,6 @@ class FrameHandler:
         then compared on the ESP-32 with the detected values, and changes are made such that
         the line is closer to the ideal."""
 
-
-
         def on_click(event, _, __, ___, ____):
             # We only care about the click event.
             if event != cv2.EVENT_LBUTTONDOWN:
@@ -147,9 +145,7 @@ class FrameHandler:
 
     def disp_thresh_frame(self, win_name: str, thresh_settings: dict) -> cv2.Mat:
         """Displays a thresholded version of the thresh_frame image, given the parameters set in
-        the debugger. It will also scale the frame to that which is in the settings before
-        displaying. The frame post-threshold is written into the 'frame_threshed' global
-        variable."""
+        the debugger. The thresholded frames is written back to the class."""
 
         if self.frame_to_thresh is not None:
             working_frame = self.frame_to_thresh.copy()
@@ -242,8 +238,7 @@ class FrameHandler:
             native_frame_width: int,
             thresh_settings: dict
     ):
-        """Sets up the window which has the trackbars for BGR thresholding (for calibration).
-        The settings arg brovided here should be the """
+        """Sets up the window which has the trackbars for BGR thresholding (for calibration)."""
 
         thresh_color_min = thresh_settings['thresh_color_min']
         thresh_color_max = thresh_settings['thresh_color_max']
