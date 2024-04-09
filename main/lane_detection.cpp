@@ -354,7 +354,7 @@ void output_to_screen(SSD1306_t& screen, PrintParams& params)
         std::to_string(framerate) + std::string(" FPS"),
         std::string("Line loc: ") + std::to_string(params.outside_dist_from_ideal)
     };
-    lane_detect::lcd_draw_string(screen, disp);
+    lane_detect::lcd_draw_string(screen, disp, 0);
 }
 
 

@@ -10,12 +10,12 @@ void lane_detect::lcd_draw_string(SSD1306_t& screen, std::string& string, int ro
 /// @brief Writes a parameter to the LCD screen.
 /// @param screen The screen to write to.
 /// @param lines The lines to write to the screen.
-void lane_detect::lcd_draw_string(SSD1306_t& screen, std::vector<std::string>& lines)
+void lane_detect::lcd_draw_string(SSD1306_t& screen, std::vector<std::string>& lines, int start_row)
 {
     for (size_t i = 0; i < lines.size(); i++)
     {
         std::string& str = lines[i];
-        lcd_draw_string(screen, str, i);
+        lcd_draw_string(screen, str, start_row + i);
     }
 }
 
