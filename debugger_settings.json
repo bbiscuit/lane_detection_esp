@@ -40,7 +40,11 @@
             "saturation": 159,
             "value": 247
         },
-        "min_detect_area": 7
+        "min_detect_area": 7,
+        "detect_loc": {
+            "y": 78,
+            "radius": 15
+        }
     },
     "outside_line_data": {
         "x": 81

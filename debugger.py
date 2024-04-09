@@ -19,6 +19,7 @@ LINE_LOC_WIN_TITLE = 'Outside Line Calibration'
 LINE_LOC_BUTTON_TEXT = 'Click this window to record values.'
 OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
 STOP_THRESH_WINNAME = 'Stop Line Thresholding'
+RED_LINE_CALIBRATION_WIN_TITLE = 'Stop Line Calibration'
 MAX_MIN_DETECT_AREA = 96*96 # The minimum detect area for the line areas.
 
 
@@ -141,6 +142,39 @@ class FrameHandler:
         )
         cv2.imshow(LINE_LOC_WIN_TITLE, img)
         cv2.setMouseCallback(LINE_LOC_WIN_TITLE, on_click)
+
+
+    def setup_red_line_loc_calibration_window(self):
+        """Sets up a few sliders for red-line detection."""
+
+        pertinent_settings = self.settings['stop_thresh']['detect_loc']
+        cv2.namedWindow(RED_LINE_CALIBRATION_WIN_TITLE)
+
+        def callback(val, settings, subscript):
+            settings[subscript] = val
+
+        cv2.createTrackbar(
+            'Stop Line Y Position',
+            RED_LINE_CALIBRATION_WIN_TITLE,
+            pertinent_settings['y'],
+            96,
+            functools.partial(
+                callback,
+                settings=pertinent_settings,
+                subscript='y'
+            )
+        )
+        cv2.createTrackbar(
+            'Stop Line Tolerance Square Radius',
+            RED_LINE_CALIBRATION_WIN_TITLE,
+            pertinent_settings['radius'],
+            50,
+            functools.partial(
+                callback,
+                settings=pertinent_settings,
+                subscript='radius'
+            )
+        )
 
 
     def disp_thresh_frame(self, win_name: str, thresh_settings: dict) -> cv2.Mat:
@@ -454,6 +488,7 @@ def main():
 
     # The BGR threshold for the image.
     frame_handler.setup_white_line_loc_calibration_window()
+    frame_handler.setup_red_line_loc_calibration_window()
     main_loop(s, frame_handler)
 
     # Write-back convenience values to settings.
