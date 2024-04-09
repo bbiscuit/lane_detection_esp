@@ -353,8 +353,6 @@ void output_to_screen(SSD1306_t& screen, PrintParams& params)
 
     lane_detect::lcd_draw_data(screen, "FPS:", (int)framerate);
     lane_detect::lcd_draw_data(screen, "Dist:", params.outside_dist_from_ideal);
-    lane_detect::lcd_draw_data(screen, "test", true);
-    lane_detect::lcd_draw_data(screen, "test", false);
 }
 
 
