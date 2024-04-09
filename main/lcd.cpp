@@ -1,6 +1,12 @@
 #include "lcd.h"
 
 
+void lane_detect::lcd_draw_string(SSD1306_t& screen, std::string& string, int row)
+{
+    ssd1306_display_text(&screen, row, string.data(), string.size(), false);
+}
+
+
 /// @brief Writes a parameter to the LCD screen.
 /// @param screen The screen to write to.
 /// @param lines The lines to write to the screen.
@@ -9,7 +15,7 @@ void lane_detect::lcd_draw_string(SSD1306_t& screen, std::vector<std::string>& l
     for (size_t i = 0; i < lines.size(); i++)
     {
         std::string& str = lines[i];
-        ssd1306_display_text(&screen, i, str.data(), str.size(), false);
+        lcd_draw_string(screen, str, i);
     }
 }
 
