@@ -350,8 +350,10 @@ void output_to_screen(SSD1306_t& screen, PrintParams& params)
     // Calculate the FPS.
     const auto framerate = static_cast<double>(configTICK_RATE_HZ) / params.delta_ticks; // How many seconds it took to process a frame.
 
-    lane_detect::lcd_draw_data(screen, "FPS:", framerate);
+    lane_detect::lcd_draw_data(screen, "FPS:", (int)framerate);
     lane_detect::lcd_draw_data(screen, "Dist:", params.outside_dist_from_ideal);
+    lane_detect::lcd_draw_data(screen, "test", true);
+    lane_detect::lcd_draw_data(screen, "test", false);
 }
 
 

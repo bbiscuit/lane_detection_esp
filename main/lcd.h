@@ -55,6 +55,14 @@ namespace lane_detect
     void lcd_draw_data(SSD1306_t& screen, std::string preamble, int data, int row = APPEND_ROW);
 
 
+    /// @brief Draws a string of this format in a row: "{preamble} {data}"
+    /// @param screen The scren to print to.
+    /// @param preamble The preamble.
+    /// @param data The data.
+    /// @param row The row on which to print.
+    void lcd_draw_data(SSD1306_t& screen, std::string preamble, bool data, int row = APPEND_ROW);
+
+
     /// @brief Writes an OpenCV matrix to the screen. This also clears the screen.
     /// @param screen The screen to write to.
     /// @param bin_mat The matrix to write. Should be a binary mask.
