@@ -41,6 +41,13 @@ void lane_detect::lcd_draw_data(SSD1306_t& screen, std::string preamble, int dat
 }
 
 
+void lane_detect::lcd_draw_data(SSD1306_t& screen, std::string preamble, bool data, int row)
+{
+    std::string arg = preamble + " " + (data ? "true" : "false");
+    lcd_draw_string(screen, arg, row);
+}
+
+
 /// @brief Writes a binary matrix to a provided LCD screen.
 /// @param screen The LCD screen to write to.
 /// @param bin_mat The binary matrix to write.
