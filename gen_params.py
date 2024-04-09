@@ -22,6 +22,11 @@ def main():
     print('#include <stdint.h>')
     print()
 
+    # Print the calibrated line position.
+    print('constexpr uint8_t expected_line_pos = ' +
+          str(settings['outside_line_data']['x']) +
+          ';')
+
     # Print the min colors.
     print(f'constexpr uint8_t outside_thresh_min_hue = {settings["outside_thresh"]["thresh_color_min"]["hue"]};')
     print(f'constexpr uint8_t outside_thresh_min_sat = {settings["outside_thresh"]["thresh_color_min"]["saturation"]};')
