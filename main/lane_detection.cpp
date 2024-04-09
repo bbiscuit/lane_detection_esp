@@ -44,7 +44,7 @@
 static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
-#define CALIBRATION_MODE 1
+#define CALIBRATION_MODE 0
 
 
 // This is necessary because it allows ESP-IDF to find the main function,
@@ -325,7 +325,7 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
 /// @param outside_thresh The threshold matrix of the outside line detection.
 /// @param outside_line_slope The slope of the outside line detection.
 /// @param delta_ticks The number of ticks it took to process the frame, for the FPS calc.
-void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope, TickType_t delta_ticks)
+void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope, TickType_t delta_ticks, int outside_dist_from_ideal)
 {
     cv::resize(outside_thresh, outside_thresh, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
     lane_detect::lcd_draw_matrix(screen, outside_thresh);
@@ -335,7 +335,7 @@ void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float&
 
     std::vector<std::string> disp = {
         std::to_string(framerate) + std::string(" FPS"),
-        std::string("slope: ") + std::to_string(outside_line_slope)
+        std::string("Line loc: ") + std::to_string(outside_dist_from_ideal)
     };
     lane_detect::lcd_draw_string(screen, disp);
 }
@@ -379,6 +379,7 @@ inline void main_loop()
         cv::Point2i outside_line_center;
         float outside_line_slope;
         outside_line_detection(hsv_outside, outside_thresh, outside_line_center, outside_line_slope);
+        int outside_dist_from_ideal = outside_line_center.x - expected_line_pos;
 
         // Perform detection on the stop line.
         cv::Mat1b stop_thresh;
@@ -391,7 +392,7 @@ inline void main_loop()
         const auto end_tick = xTaskGetTickCount();
         const auto delta_ticks = end_tick - start_tick;
 
-        output_to_screen(screen, unified_thresh, outside_line_slope, delta_ticks);
+        output_to_screen(screen, unified_thresh, outside_line_slope, delta_ticks, outside_dist_from_ideal);
 
         vTaskDelay(1);
     }
