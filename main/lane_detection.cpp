@@ -320,22 +320,39 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
 }
 
 
+/// @brief Parameters which are available to the LCD screen printing.
+class PrintParams
+{
+    public:
+    PrintParams(): frame(cv::Mat1b()), outside_line_slope(0), delta_ticks(0), outside_dist_from_ideal(0) {}
+
+    /// @brief The image to print to the screen.
+    cv::Mat1b frame;
+
+    /// @brief The slope of the detected outside line.
+    float outside_line_slope;
+
+    /// @brief The number of ticks which have thus far passed.
+    TickType_t delta_ticks;
+
+    /// @brief The number of pixels the line on the screen is from its ideal, calibrated position.
+    int outside_dist_from_ideal;
+};
+
 /// @brief Prints data about the detection process to the LCD screen.
 /// @param screen The screen to print to.
-/// @param outside_thresh The threshold matrix of the outside line detection.
-/// @param outside_line_slope The slope of the outside line detection.
-/// @param delta_ticks The number of ticks it took to process the frame, for the FPS calc.
-void output_to_screen(SSD1306_t& screen, cv::Mat1b& outside_thresh, const float& outside_line_slope, TickType_t delta_ticks, int outside_dist_from_ideal)
+/// @param params A struct containing values to print to the screen.
+void output_to_screen(SSD1306_t& screen, PrintParams& params)
 {
-    cv::resize(outside_thresh, outside_thresh, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
-    lane_detect::lcd_draw_matrix(screen, outside_thresh);
+    cv::resize(params.frame, params.frame, cv::Size(lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT));
+    lane_detect::lcd_draw_matrix(screen, params.frame);
 
     // Calculate the FPS.
-    const auto framerate = static_cast<double>(configTICK_RATE_HZ) / delta_ticks; // How many seconds it took to process a frame.
+    const auto framerate = static_cast<double>(configTICK_RATE_HZ) / params.delta_ticks; // How many seconds it took to process a frame.
 
     std::vector<std::string> disp = {
         std::to_string(framerate) + std::string(" FPS"),
-        std::string("Line loc: ") + std::to_string(outside_dist_from_ideal)
+        std::string("Line loc: ") + std::to_string(params.outside_dist_from_ideal)
     };
     lane_detect::lcd_draw_string(screen, disp);
 }
@@ -387,12 +404,15 @@ inline void main_loop()
         stop_line_detection(hsv, stop_thresh, detected);
 
         // Write to the screen.
-        cv::Mat1b unified_thresh = outside_thresh | stop_thresh;
-
         const auto end_tick = xTaskGetTickCount();
         const auto delta_ticks = end_tick - start_tick;
 
-        output_to_screen(screen, unified_thresh, outside_line_slope, delta_ticks, outside_dist_from_ideal);
+        PrintParams params;
+        params.delta_ticks = delta_ticks;
+        params.frame = outside_thresh | stop_thresh;
+        params.outside_dist_from_ideal = outside_dist_from_ideal;
+        params.outside_line_slope = outside_line_slope;
+        output_to_screen(screen, params);
 
         vTaskDelay(1);
     }
