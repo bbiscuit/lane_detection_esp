@@ -324,7 +324,7 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
 class PrintParams
 {
     public:
-    PrintParams(): frame(cv::Mat1b()), outside_line_slope(0), delta_ticks(0), outside_dist_from_ideal(0) {}
+    PrintParams(): frame(cv::Mat1b()), outside_line_slope(0), start_tick(0), outside_dist_from_ideal(0) {}
 
     /// @brief The image to print to the screen.
     cv::Mat1b frame;
@@ -333,7 +333,7 @@ class PrintParams
     float outside_line_slope;
 
     /// @brief The number of ticks which have thus far passed.
-    TickType_t delta_ticks;
+    TickType_t start_tick;
 
     /// @brief The number of pixels the line on the screen is from its ideal, calibrated position.
     int outside_dist_from_ideal;
@@ -348,7 +348,7 @@ void output_to_screen(SSD1306_t& screen, PrintParams& params)
     lane_detect::lcd_draw_matrix(screen, params.frame);
 
     // Calculate the FPS.
-    const auto framerate = static_cast<double>(configTICK_RATE_HZ) / params.delta_ticks; // How many seconds it took to process a frame.
+    const auto framerate = static_cast<double>(configTICK_RATE_HZ) / params.start_tick; // How many seconds it took to process a frame.
 
     lane_detect::lcd_draw_data(screen, "FPS:", (int)framerate);
     lane_detect::lcd_draw_data(screen, "Dist:", params.outside_dist_from_ideal);
@@ -403,11 +403,8 @@ inline void main_loop()
         stop_line_detection(hsv, stop_thresh, detected);
 
         // Write to the screen.
-        const auto end_tick = xTaskGetTickCount();
-        const auto delta_ticks = end_tick - start_tick;
-
         PrintParams params;
-        params.delta_ticks = delta_ticks;
+        params.start_tick = start_tick;
         params.frame = outside_thresh | stop_thresh;
         params.outside_dist_from_ideal = outside_dist_from_ideal;
         params.outside_line_slope = outside_line_slope;
