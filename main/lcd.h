@@ -34,14 +34,14 @@ namespace lane_detect
     /// @param screen The screen to draw to.
     /// @param string The string.
     /// @param row The row of the screen to draw at.
-    void lcd_draw_string(SSD1306_t& screen, std::string& string, int row);
+    void lcd_draw_string(SSD1306_t& screen, std::string& string, int row = -1);
 
 
     /// @brief Writes a number of lines to the LCD screen, from top to bottom.
     /// @param screen The screen to write to.
     /// @param lines The lines to write to the screen.
     /// @param start_row The row to start printing on.
-    void lcd_draw_string(SSD1306_t& screen, std::vector<std::string>& lines, int start_row = 0);
+    void lcd_draw_string(SSD1306_t& screen, std::vector<std::string>& lines, int start_row = -1);
 
 
     /// @brief Writes an OpenCV matrix to the screen. This also clears the screen.
