@@ -350,11 +350,8 @@ void output_to_screen(SSD1306_t& screen, PrintParams& params)
     // Calculate the FPS.
     const auto framerate = static_cast<double>(configTICK_RATE_HZ) / params.delta_ticks; // How many seconds it took to process a frame.
 
-    std::vector<std::string> disp = {
-        std::to_string(framerate) + std::string(" FPS"),
-        std::string("Line loc: ") + std::to_string(params.outside_dist_from_ideal)
-    };
-    lane_detect::lcd_draw_string(screen, disp);
+    lane_detect::lcd_draw_data(screen, "FPS:", framerate);
+    lane_detect::lcd_draw_data(screen, "Dist:", params.outside_dist_from_ideal);
 }
 
 
