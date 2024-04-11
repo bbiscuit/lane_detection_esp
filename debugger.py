@@ -379,6 +379,7 @@ class FrameHandler:
 
     def _disp_red_line_loc_calibration_frame(self):
         """Displays the frame for red line calibration in the same window as the trackbars."""
+        # Draw the detection rectangle on the frame.
         detect_y = self.settings["stop_thresh"]["detect_loc"]["y"]
         detect_radius = self.settings["stop_thresh"]["detect_loc"]["radius"]
 
@@ -389,6 +390,22 @@ class FrameHandler:
         bottom_coord = (to_disp.shape[1], detect_y + detect_radius)
 
         to_disp = cv2.rectangle(to_disp, top_coord, bottom_coord, (0, 0, 255), -1)
+
+        # If the area of the red line is above the minimum, and the line intersects the rectangle,
+        # then mark a detection.
+        detected = False
+
+        cv2.putText(
+            to_disp,
+            f'Detected: {detected}',
+            (5, 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.25,
+            (255,255,255),
+            1,
+            cv2.LINE_AA
+        )
+
         cv2.imshow(RED_LINE_CALIBRATION_WIN_TITLE, to_disp)
 
 
