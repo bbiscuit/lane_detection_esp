@@ -38,6 +38,25 @@ def get_largest_contour(img: cv2.Mat):
     return contours[0]
 
 
+def do_rectangles_intersect(rect1, rect2):
+    """Checks if two rectangles intersect."""
+    x1, y1, w1, h1 = rect1  # Rectangle 1 position and size
+    x2, y2, w2, h2 = rect2  # Rectangle 2 position and size
+
+    # Determine the coordinates of the corners of the rectangles
+    top_left_1 = (x1, y1)
+    bottom_right_1 = (x1 + w1, y1 + h1)
+    top_left_2 = (x2, y2)
+    bottom_right_2 = (x2 + w2, y2 + h2)
+
+    # Check for intersection
+    if (top_left_1[0] < bottom_right_2[0] and bottom_right_1[0] > top_left_2[0] and
+        top_left_1[1] < bottom_right_2[1] and bottom_right_1[1] > top_left_2[1]):
+        return True  # There is an intersection
+
+    return False  # There is no intersection
+
+
 class FrameHandler:
     """A class which takes a received frame and makes the different windows."""
     def __init__(self, settings: dict):
@@ -394,6 +413,17 @@ class FrameHandler:
         # If the area of the red line is above the minimum, and the line intersects the rectangle,
         # then mark a detection.
         detected = False
+        red_line_contour = get_largest_contour(self._frame_threshed_stop)
+        bounding_rect = cv2.boundingRect(red_line_contour)
+
+        detected = \
+            (bounding_rect[2] * bounding_rect[3]) >= \
+            self.settings["stop_thresh"]["min_detect_area"]
+        detected = detected and \
+            do_rectangles_intersect(bounding_rect,
+                                    (top_coord[0], top_coord[1], bottom_coord[1],
+                                     detect_radius*2)
+            )
 
         cv2.putText(
             to_disp,
