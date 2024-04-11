@@ -9,6 +9,10 @@
 #include <stdint.h>
 
 constexpr uint8_t expected_line_pos = 81;
+
+constexpr uint8_t expected_red_y = 78;
+constexpr uint8_t expected_red_radius = 2;
+
 constexpr uint8_t outside_thresh_min_hue = 8;
 constexpr uint8_t outside_thresh_min_sat = 0;
 constexpr uint8_t outside_thresh_min_val = 238;

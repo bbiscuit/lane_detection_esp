@@ -26,6 +26,20 @@ def main():
     print('constexpr uint8_t expected_line_pos = ' +
           str(settings['outside_line_data']['x']) +
           ';')
+    print()
+
+    # Print the stop-line position.
+    print(
+        'constexpr uint8_t expected_red_y = ' +
+        str(settings['stop_thresh']['detect_loc']['y']) +
+        ';'
+    )
+    print(
+        'constexpr uint8_t expected_red_radius = ' +
+        str(settings['stop_thresh']['detect_loc']['radius']) +
+        ';'
+    )
+    print()
 
     # Print the min colors.
     print(f'constexpr uint8_t outside_thresh_min_hue = {settings["outside_thresh"]["thresh_color_min"]["hue"]};')
