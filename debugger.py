@@ -443,7 +443,7 @@ def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
     so that it can be intelligently processed."""
 
-    # Busy-wait until we recieve the start bit (1)
+    # Busy-wait until we recieve the start phrase.
     read = ''
     while 'START' not in read:
         read += s.read().decode(errors='ignore')
