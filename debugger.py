@@ -19,6 +19,7 @@ LINE_LOC_WIN_TITLE = 'Outside Line Calibration'
 LINE_LOC_BUTTON_TEXT = 'Click this window to record values.'
 OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
 STOP_THRESH_WINNAME = 'Stop Line Thresholding'
+RED_LINE_CALIBRATION_WIN_TITLE = 'Stop Line Calibration'
 MAX_MIN_DETECT_AREA = 96*96 # The minimum detect area for the line areas.
 
 
@@ -35,6 +36,25 @@ def get_largest_contour(img: cv2.Mat):
     if 0 == len(contours):
         return None
     return contours[0]
+
+
+def do_rectangles_intersect(rect1, rect2):
+    """Checks if two rectangles intersect."""
+    x1, y1, w1, h1 = rect1  # Rectangle 1 position and size
+    x2, y2, w2, h2 = rect2  # Rectangle 2 position and size
+
+    # Determine the coordinates of the corners of the rectangles
+    top_left_1 = (x1, y1)
+    bottom_right_1 = (x1 + w1, y1 + h1)
+    top_left_2 = (x2, y2)
+    bottom_right_2 = (x2 + w2, y2 + h2)
+
+    # Check for intersection
+    if (top_left_1[0] < bottom_right_2[0] and bottom_right_1[0] > top_left_2[0] and
+        top_left_1[1] < bottom_right_2[1] and bottom_right_1[1] > top_left_2[1]):
+        return True  # There is an intersection
+
+    return False  # There is no intersection
 
 
 class FrameHandler:
@@ -94,6 +114,7 @@ class FrameHandler:
             STOP_THRESH_WINNAME,
             self.settings['stop_thresh']
         )
+        self._disp_red_line_loc_calibration_frame()
 
 
     def setup_white_line_loc_calibration_window(self):
@@ -141,6 +162,39 @@ class FrameHandler:
         )
         cv2.imshow(LINE_LOC_WIN_TITLE, img)
         cv2.setMouseCallback(LINE_LOC_WIN_TITLE, on_click)
+
+
+    def setup_red_line_loc_calibration_window(self):
+        """Sets up a few sliders for red-line detection."""
+
+        pertinent_settings = self.settings['stop_thresh']['detect_loc']
+        cv2.namedWindow(RED_LINE_CALIBRATION_WIN_TITLE)
+
+        def callback(val, settings, subscript):
+            settings[subscript] = val
+
+        cv2.createTrackbar(
+            'Stop Line Y Position',
+            RED_LINE_CALIBRATION_WIN_TITLE,
+            pertinent_settings['y'],
+            96,
+            functools.partial(
+                callback,
+                settings=pertinent_settings,
+                subscript='y'
+            )
+        )
+        cv2.createTrackbar(
+            'Stop Line Tolerance Square Radius',
+            RED_LINE_CALIBRATION_WIN_TITLE,
+            pertinent_settings['radius'],
+            50,
+            functools.partial(
+                callback,
+                settings=pertinent_settings,
+                subscript='radius'
+            )
+        )
 
 
     def disp_thresh_frame(self, win_name: str, thresh_settings: dict) -> cv2.Mat:
@@ -342,6 +396,48 @@ class FrameHandler:
             functools.partial(area_detection_callback, settings=thresh_settings)
         )
 
+    def _disp_red_line_loc_calibration_frame(self):
+        """Displays the frame for red line calibration in the same window as the trackbars."""
+        # Draw the detection rectangle on the frame.
+        detect_y = self.settings["stop_thresh"]["detect_loc"]["y"]
+        detect_radius = self.settings["stop_thresh"]["detect_loc"]["radius"]
+
+        to_disp = self._frame_threshed_stop.copy()
+        to_disp = cv2.cvtColor(to_disp, cv2.COLOR_GRAY2BGR)
+
+        top_coord = (0, detect_y - detect_radius)
+        bottom_coord = (to_disp.shape[1], detect_y + detect_radius)
+
+        to_disp = cv2.rectangle(to_disp, top_coord, bottom_coord, (0, 0, 255), -1)
+
+        # If the area of the red line is above the minimum, and the line intersects the rectangle,
+        # then mark a detection.
+        detected = False
+        red_line_contour = get_largest_contour(self._frame_threshed_stop)
+        bounding_rect = cv2.boundingRect(red_line_contour)
+
+        detected = \
+            (bounding_rect[2] * bounding_rect[3]) >= \
+            self.settings["stop_thresh"]["min_detect_area"]
+        detected = detected and \
+            do_rectangles_intersect(bounding_rect,
+                                    (top_coord[0], top_coord[1], bottom_coord[1],
+                                     detect_radius*2)
+            )
+
+        cv2.putText(
+            to_disp,
+            f'Detected: {detected}',
+            (5, 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.25,
+            (255,255,255),
+            1,
+            cv2.LINE_AA
+        )
+
+        cv2.imshow(RED_LINE_CALIBRATION_WIN_TITLE, to_disp)
+
 
 def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
     """Reads a frame from the serial port. Returned with it is the type of the frame,
@@ -454,6 +550,7 @@ def main():
 
     # The BGR threshold for the image.
     frame_handler.setup_white_line_loc_calibration_window()
+    frame_handler.setup_red_line_loc_calibration_window()
     main_loop(s, frame_handler)
 
     # Write-back convenience values to settings.

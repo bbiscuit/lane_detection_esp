@@ -301,6 +301,14 @@ void outside_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, cv::Point2i& center
 }
 
 
+bool rectangles_overlap(cv::Rect2i rect1, cv::Rect2i rect2)
+{
+    // Check if there is no overlap between the two rectangles
+    return !(rect1.x > rect2.x + rect2.width || rect2.x > rect1.x + rect1.width ||
+        rect1.y > rect2.y + rect2.height || rect2.y > rect1.y + rect1.height);
+}
+
+
 /// @brief Finds the red line and extracts parameters.
 /// @param hsv The frame, in HSV, to extract data from.
 /// @param thresh The threshold frame, Output param.
@@ -316,7 +324,8 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
     const auto stop_line = get_stop_line(thresh);
 
     const auto stop_line_rect = cv::boundingRect(stop_line);
-    detected = stop_line_rect.area() >= stop_min_detect_area;
+    const cv::Rect2i detection_rect(cv::Point2i(0, expected_red_y - expected_red_radius), cv::Point2i(thresh.cols, expected_red_y + expected_red_radius));
+    detected = stop_line_rect.area() >= stop_min_detect_area && rectangles_overlap(stop_line_rect, detection_rect);
 }
 
 
@@ -324,7 +333,7 @@ void stop_line_detection(cv::Mat& hsv, cv::Mat1b& thresh, bool& detected)
 class PrintParams
 {
     public:
-    PrintParams(): frame(cv::Mat1b()), outside_line_slope(0), start_tick(0), outside_dist_from_ideal(0) {}
+    PrintParams(): frame(cv::Mat1b()), outside_line_slope(0), start_tick(0), outside_dist_from_ideal(0), stop_detected(false) {}
 
     /// @brief The image to print to the screen.
     cv::Mat1b frame;
@@ -337,6 +346,9 @@ class PrintParams
 
     /// @brief The number of pixels the line on the screen is from its ideal, calibrated position.
     int outside_dist_from_ideal;
+
+    /// @brief Whether the stop line has been detected.
+    bool stop_detected;
 };
 
 /// @brief Prints data about the detection process to the LCD screen.
@@ -351,10 +363,8 @@ void output_to_screen(SSD1306_t& screen, PrintParams& params)
     const auto delta_ticks = xTaskGetTickCount() - params.start_tick;
     const auto framerate = static_cast<double>(configTICK_RATE_HZ) / delta_ticks; // How many seconds it took to process a frame.
 
-    lane_detect::lcd_draw_data(screen, "FPS:", (int)framerate);
+    lane_detect::lcd_draw_data(screen, "Stop Detected:", params.stop_detected);
     lane_detect::lcd_draw_data(screen, "Dist:", params.outside_dist_from_ideal);
-    lane_detect::lcd_draw_data(screen, "test", true);
-    lane_detect::lcd_draw_data(screen, "test", false);
 }
 
 
@@ -409,6 +419,7 @@ inline void main_loop()
         params.frame = outside_thresh | stop_thresh;
         params.outside_dist_from_ideal = outside_dist_from_ideal;
         params.outside_line_slope = outside_line_slope;
+        params.stop_detected = detected;
         output_to_screen(screen, params);
 
         vTaskDelay(1);
