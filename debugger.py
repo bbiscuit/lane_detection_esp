@@ -444,8 +444,9 @@ def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
     so that it can be intelligently processed."""
 
     # Busy-wait until we recieve the start bit (1)
+    read = ''
     while True:
-        read = ''
+        read += s.read().decode()
 
         if 'START' in read:
             break
