@@ -95,6 +95,7 @@ class FrameHandler:
             STOP_THRESH_WINNAME,
             self.settings['stop_thresh']
         )
+        self._disp_red_line_loc_calibration_frame()
 
 
     def setup_white_line_loc_calibration_window(self):
@@ -375,6 +376,20 @@ class FrameHandler:
             MAX_MIN_DETECT_AREA,
             functools.partial(area_detection_callback, settings=thresh_settings)
         )
+
+    def _disp_red_line_loc_calibration_frame(self):
+        """Displays the frame for red line calibration in the same window as the trackbars."""
+        detect_y = self.settings["stop_thresh"]["detect_loc"]["y"]
+        detect_radius = self.settings["stop_thresh"]["detect_loc"]["radius"]
+
+        to_disp = self._frame_threshed_stop.copy()
+        to_disp = cv2.cvtColor(to_disp, cv2.COLOR_GRAY2BGR)
+
+        top_coord = (0, detect_y - detect_radius)
+        bottom_coord = (to_disp.shape[1], detect_y + detect_radius)
+
+        to_disp = cv2.rectangle(to_disp, top_coord, bottom_coord, (0, 0, 255), -1)
+        cv2.imshow(RED_LINE_CALIBRATION_WIN_TITLE, to_disp)
 
 
 def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
