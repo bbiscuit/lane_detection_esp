@@ -445,11 +445,8 @@ def serial_reader(s: serial.Serial) -> tuple[cv2.Mat, str]:
 
     # Busy-wait until we recieve the start bit (1)
     read = ''
-    while True:
-        read += s.read().decode()
-
-        if 'START' in read:
-            break
+    while 'START' not in read:
+        read += s.read().decode(errors='ignore')
 
     # Read the 32-bit number of rows
     rows = int(s.read(size=4).decode(), base=16)
