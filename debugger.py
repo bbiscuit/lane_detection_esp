@@ -318,26 +318,30 @@ class FrameHandler:
             color_to_update[dim] = val
             self.disp_thresh_frame(window_name, thresh_settings)
 
+        max_hue = 179
+        max_sat = 255
+        max_val = 255
+
         cv2.namedWindow(window_name)
         cv2.createTrackbar(
             "Min Hue",
             window_name,
             thresh_color_min["hue"],
-            179,
+            max_hue,
             functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue")
         )
         cv2.createTrackbar(
             "Min Saturation",
             window_name,
             thresh_color_min["saturation"],
-            255,
+            max_sat,
             functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation")
         )
         cv2.createTrackbar(
             "Min Value",
             window_name,
             thresh_color_min["value"],
-            255,
+            max_val,
             functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value")
         )
 
@@ -345,21 +349,21 @@ class FrameHandler:
             "Max Hue",
             window_name,
             thresh_color_max["hue"],
-            179,
+            max_hue,
             functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue")
         )
         cv2.createTrackbar(
             "Max Saturation",
             window_name,
             thresh_color_max["saturation"],
-            255,
+            max_sat,
             functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation")
         )
         cv2.createTrackbar(
             "Max Value",
             window_name,
             thresh_color_max["value"],
-            255,
+            max_val,
             functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value")
         )
 
