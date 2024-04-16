@@ -20,6 +20,7 @@ LINE_LOC_BUTTON_TEXT = 'Click this window to record values.'
 OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
 STOP_THRESH_WINNAME = 'Stop Line Thresholding'
 RED_LINE_CALIBRATION_WIN_TITLE = 'Stop Line Calibration'
+WIN_SIZE = 96
 MAX_MIN_DETECT_AREA = 96*96 # The minimum detect area for the line areas.
 
 
@@ -150,10 +151,11 @@ class FrameHandler:
         font_scale = 0.5
         color = (255, 0, 255)  # BGR color
         thickness = 1
+        loc = (50, 50)
         img = cv2.putText(
             img,
             LINE_LOC_BUTTON_TEXT,
-            (50, 50),
+            loc,
             font,
             font_scale,
             color,
@@ -177,18 +179,19 @@ class FrameHandler:
             'Stop Line Y Position',
             RED_LINE_CALIBRATION_WIN_TITLE,
             pertinent_settings['y'],
-            96,
+            WIN_SIZE,
             functools.partial(
                 callback,
                 settings=pertinent_settings,
                 subscript='y'
             )
         )
+        tolerance_max = 50
         cv2.createTrackbar(
             'Stop Line Tolerance Square Radius',
             RED_LINE_CALIBRATION_WIN_TITLE,
             pertinent_settings['radius'],
-            50,
+            tolerance_max,
             functools.partial(
                 callback,
                 settings=pertinent_settings,
@@ -203,6 +206,7 @@ class FrameHandler:
 
         if self.frame_to_thresh is not None:
             working_frame = self.frame_to_thresh.copy()
+            fill_rect_thickness = -1 # A thinkness of -1 to cv2.rectangle makes the rect full.
 
             # Perform cropping of the image based upon the cropping parameters.
             cropping = thresh_settings['cropping']
@@ -210,7 +214,13 @@ class FrameHandler:
 
             top_cropping = cropping['top']
             if top_cropping > 0:
-                cv2.rectangle(working_frame, (0, 0), (cols, top_cropping), (0, 0, 0), -1)
+                cv2.rectangle(
+                    working_frame,
+                    (0, 0),
+                    (cols, top_cropping),
+                    (0, 0, 0),
+                    fill_rect_thickness
+                )
 
             bottom_cropping = cropping['bottom']
             if bottom_cropping > 0:
@@ -219,12 +229,18 @@ class FrameHandler:
                     (0, rows),
                     (cols, rows - bottom_cropping),
                     (0, 0, 0),
-                    -1
+                    fill_rect_thickness
                 )
 
             left_cropping = cropping['left']
             if left_cropping > 0:
-                cv2.rectangle(working_frame, (0, 0), (left_cropping, rows), (0, 0, 0), -1)
+                cv2.rectangle(
+                    working_frame,
+                    (0, 0),
+                    (left_cropping, rows),
+                    (0, 0, 0),
+                    fill_rect_thickness
+                )
 
             right_cropping = cropping['right']
             if right_cropping > 0:
@@ -233,7 +249,7 @@ class FrameHandler:
                     (cols, 0),
                     (cols - right_cropping, rows),
                     (0, 0, 0),
-                    -1
+                    fill_rect_thickness
                 )
 
             # Perform color thresholding.
@@ -302,26 +318,30 @@ class FrameHandler:
             color_to_update[dim] = val
             self.disp_thresh_frame(window_name, thresh_settings)
 
+        max_hue = 179
+        max_sat = 255
+        max_val = 255
+
         cv2.namedWindow(window_name)
         cv2.createTrackbar(
             "Min Hue",
             window_name,
             thresh_color_min["hue"],
-            179,
+            max_hue,
             functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="hue")
         )
         cv2.createTrackbar(
             "Min Saturation",
             window_name,
             thresh_color_min["saturation"],
-            255,
+            max_sat,
             functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="saturation")
         )
         cv2.createTrackbar(
             "Min Value",
             window_name,
             thresh_color_min["value"],
-            255,
+            max_val,
             functools.partial(on_trackbar, color_to_update=thresh_color_min, dim="value")
         )
 
@@ -329,21 +349,21 @@ class FrameHandler:
             "Max Hue",
             window_name,
             thresh_color_max["hue"],
-            179,
+            max_hue,
             functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="hue")
         )
         cv2.createTrackbar(
             "Max Saturation",
             window_name,
             thresh_color_max["saturation"],
-            255,
+            max_sat,
             functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="saturation")
         )
         cv2.createTrackbar(
             "Max Value",
             window_name,
             thresh_color_max["value"],
-            255,
+            max_val,
             functools.partial(on_trackbar, color_to_update=thresh_color_max, dim="value")
         )
 
@@ -425,14 +445,19 @@ class FrameHandler:
                                      detect_radius*2)
             )
 
+        text_loc = (5, 10)
+        text_font = cv2.FONT_HERSHEY_SIMPLEX
+        text_scale = 0.25
+        text_thickness = 1
+        text_color = (255,255,255)
         cv2.putText(
             to_disp,
             f'Detected: {detected}',
-            (5, 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.25,
-            (255,255,255),
-            1,
+            text_loc,
+            text_font,
+            text_scale,
+            text_color,
+            text_thickness,
             cv2.LINE_AA
         )
 
