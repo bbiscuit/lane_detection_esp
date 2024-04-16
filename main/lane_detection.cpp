@@ -24,6 +24,7 @@
 #include "sdkconfig.h"
 #include "esp_camera.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
 
 
 // FreeRTOS imports
@@ -45,6 +46,12 @@ static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
 #define CALIBRATION_MODE 0
+
+// The pin to write to.
+#define TX_GPIO GPIO_NUM_1
+
+// The baudrate of the TX communication.
+constexpr uint16_t tx_baud = 19200;
 
 
 // This is necessary because it allows ESP-IDF to find the main function,
@@ -378,6 +385,13 @@ inline void main_loop()
     i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
     ssd1306_init(&screen, lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT);
 
+    // Init tx pin
+    gpio_reset_pin(TX_GPIO);
+    gpio_reset_pin(GPIO_NUM_3);
+    gpio_set_direction(TX_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_direction(GPIO_NUM_3, GPIO_MODE_OUTPUT);
+    bool write_val = false;
+
     while (true)
     {
         // Crop the current frame so that it will fit on the screen.
@@ -422,6 +436,9 @@ inline void main_loop()
         params.stop_detected = detected;
         output_to_screen(screen, params);
 
+        gpio_set_level(TX_GPIO, write_val);
+        gpio_set_level(GPIO_NUM_3, write_val);
+        write_val = !write_val;
         vTaskDelay(1);
     }
 }
