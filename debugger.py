@@ -150,10 +150,11 @@ class FrameHandler:
         font_scale = 0.5
         color = (255, 0, 255)  # BGR color
         thickness = 1
+        loc = (50, 50)
         img = cv2.putText(
             img,
             LINE_LOC_BUTTON_TEXT,
-            (50, 50),
+            loc,
             font,
             font_scale,
             color,
