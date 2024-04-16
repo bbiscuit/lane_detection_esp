@@ -214,7 +214,13 @@ class FrameHandler:
 
             top_cropping = cropping['top']
             if top_cropping > 0:
-                cv2.rectangle(working_frame, (0, 0), (cols, top_cropping), (0, 0, 0), -1)
+                cv2.rectangle(
+                    working_frame,
+                    (0, 0),
+                    (cols, top_cropping),
+                    (0, 0, 0),
+                    fill_rect_thickness
+                )
 
             bottom_cropping = cropping['bottom']
             if bottom_cropping > 0:
@@ -228,7 +234,13 @@ class FrameHandler:
 
             left_cropping = cropping['left']
             if left_cropping > 0:
-                cv2.rectangle(working_frame, (0, 0), (left_cropping, rows), (0, 0, 0), -1)
+                cv2.rectangle(
+                    working_frame,
+                    (0, 0),
+                    (left_cropping, rows),
+                    (0, 0, 0),
+                    fill_rect_thickness
+                )
 
             right_cropping = cropping['right']
             if right_cropping > 0:
