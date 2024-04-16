@@ -445,14 +445,19 @@ class FrameHandler:
                                      detect_radius*2)
             )
 
+        text_loc = (5, 10)
+        text_font = cv2.FONT_HERSHEY_SIMPLEX
+        text_scale = 0.25
+        text_thickness = 1
+        text_color = (255,255,255)
         cv2.putText(
             to_disp,
             f'Detected: {detected}',
-            (5, 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.25,
-            (255,255,255),
-            1,
+            text_loc,
+            text_font,
+            text_scale,
+            text_color,
+            text_thickness,
             cv2.LINE_AA
         )
 
