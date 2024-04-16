@@ -206,6 +206,7 @@ class FrameHandler:
 
         if self.frame_to_thresh is not None:
             working_frame = self.frame_to_thresh.copy()
+            fill_rect_thickness = -1 # A thinkness of -1 to cv2.rectangle makes the rect full.
 
             # Perform cropping of the image based upon the cropping parameters.
             cropping = thresh_settings['cropping']
@@ -222,7 +223,7 @@ class FrameHandler:
                     (0, rows),
                     (cols, rows - bottom_cropping),
                     (0, 0, 0),
-                    -1
+                    fill_rect_thickness
                 )
 
             left_cropping = cropping['left']
@@ -236,7 +237,7 @@ class FrameHandler:
                     (cols, 0),
                     (cols - right_cropping, rows),
                     (0, 0, 0),
-                    -1
+                    fill_rect_thickness
                 )
 
             # Perform color thresholding.
