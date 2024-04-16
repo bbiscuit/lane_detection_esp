@@ -20,6 +20,7 @@ LINE_LOC_BUTTON_TEXT = 'Click this window to record values.'
 OUTSIDE_THRESH_WINNAME = 'Outside Line Thresholding'
 STOP_THRESH_WINNAME = 'Stop Line Thresholding'
 RED_LINE_CALIBRATION_WIN_TITLE = 'Stop Line Calibration'
+WIN_SIZE = 96
 MAX_MIN_DETECT_AREA = 96*96 # The minimum detect area for the line areas.
 
 
@@ -178,18 +179,19 @@ class FrameHandler:
             'Stop Line Y Position',
             RED_LINE_CALIBRATION_WIN_TITLE,
             pertinent_settings['y'],
-            96,
+            WIN_SIZE,
             functools.partial(
                 callback,
                 settings=pertinent_settings,
                 subscript='y'
             )
         )
+        tolerance_max = 50
         cv2.createTrackbar(
             'Stop Line Tolerance Square Radius',
             RED_LINE_CALIBRATION_WIN_TITLE,
             pertinent_settings['radius'],
-            50,
+            tolerance_max,
             functools.partial(
                 callback,
                 settings=pertinent_settings,
