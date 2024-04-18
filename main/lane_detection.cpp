@@ -24,6 +24,8 @@
 #include "sdkconfig.h"
 #include "esp_camera.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
+#include "driver/uart.h"
 
 
 // FreeRTOS imports
@@ -45,6 +47,15 @@ static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
 #define CALIBRATION_MODE 0
+
+// The pin to write to.
+#define TX_GPIO GPIO_NUM_1
+
+// The UART device to use for control transmission.
+#define UART_NUM UART_NUM_0
+
+// The baudrate of the TX communication.
+constexpr uint16_t tx_baud = 19200;
 
 
 // This is necessary because it allows ESP-IDF to find the main function,
@@ -378,6 +389,17 @@ inline void main_loop()
     i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
     ssd1306_init(&screen, lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT);
 
+    // Init tx pin
+    uart_config_t uart_config = {
+        .baud_rate = 19200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+    uart_param_config(0, &uart_config);
+    uart_driver_install(0, 1024 * 2, 0, 0, NULL, 0);
+
     while (true)
     {
         // Crop the current frame so that it will fit on the screen.
@@ -421,6 +443,12 @@ inline void main_loop()
         params.outside_line_slope = outside_line_slope;
         params.stop_detected = detected;
         output_to_screen(screen, params);
+
+        // Write to TX.
+        auto dist_string = std::to_string(outside_dist_from_ideal);
+        uart_write_bytes(UART_NUM, "D", 1);
+        uart_write_bytes(UART_NUM, dist_string.data(), dist_string.size());
+        uart_write_bytes(UART_NUM, "E", 1);
 
         vTaskDelay(1);
     }
