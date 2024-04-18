@@ -15,7 +15,7 @@ its course using image processing techniques with an OpenCV fork rather than IR 
 ## Build Instructions
 This project uses the ESP-IDF toolchain for building and flashing the ESP-32 CAM. Therefore,
 installing that toolchain is a prerequisite to building this project. Install instructions may
-be found [https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/](here).
+be found [here](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/).
 The easiest way to install the toolchain is to install it through an IDE, such as the VSCode
 extension.
 
