@@ -12,6 +12,20 @@ its course using image processing techniques with an OpenCV fork rather than IR 
 `debugger.py` - The debugger application. See debugger section.\
 `gen_params.py` - Generates debugger parameters. See debugger section.
 
+## Build Instructions
+This project uses the ESP-IDF toolchain for building and flashing the ESP-32 CAM. Therefore,
+installing that toolchain is a prerequisite to building this project. Install instructions may
+be found [https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/](here).
+The easiest way to install the toolchain is to install it through an IDE, such as the VSCode
+extension.
+
+Once the ESP-IDF toolchain has been installed, building ought to be as simple as running the
+command `idf.py build` from the terminal (or, if using an extension, by clicking the "build"
+button). The board may then be flashed by running `idf.py -p <serial port of ESP32-CAM> flash`.
+It's important to note that because of hardware limitations the ESP-32 cannot be flashed while
+the LCD screen is connected to the board, so make sure that it is removed prior to running
+`idf.py flash`.
+
 ## Transmission to the Junior Robot
 The define `UART_NUM` specifies the UART port which the ESP-32 transmits its control data over.
 This includes a steering parameter and whether or not the stop-line has been detected. The protocol
