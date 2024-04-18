@@ -46,7 +46,7 @@
 static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
-#define CALIBRATION_MODE 0
+#define CALIBRATION_MODE 1
 
 // The pin to write to.
 #define TX_GPIO GPIO_NUM_1
@@ -390,6 +390,7 @@ inline void main_loop()
     ssd1306_init(&screen, lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT);
 
     // Init tx pin
+    #if(CALIBRATION_MODE == 0)
     uart_config_t uart_config = {
         .baud_rate = 19200,
         .data_bits = UART_DATA_8_BITS,
@@ -399,6 +400,7 @@ inline void main_loop()
     };
     uart_param_config(0, &uart_config);
     uart_driver_install(0, 1024 * 2, 0, 0, NULL, 0);
+    #endif
 
     while (true)
     {
@@ -445,10 +447,12 @@ inline void main_loop()
         output_to_screen(screen, params);
 
         // Write to TX.
+        #if(CALIBRATION_MODE == 0)
         auto dist_string = std::to_string(outside_dist_from_ideal);
         uart_write_bytes(UART_NUM, "D", 1);
         uart_write_bytes(UART_NUM, dist_string.data(), dist_string.size());
         uart_write_bytes(UART_NUM, "E", 1);
+        #endif
 
         vTaskDelay(1);
     }

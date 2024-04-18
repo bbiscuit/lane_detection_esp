@@ -6,9 +6,9 @@
     },
     "outside_thresh": {
         "cropping": {
-            "left": 60,
+            "left": 22,
             "right": 0,
-            "top": 45,
+            "top": 51,
             "bottom": 0
         },
         "thresh_color_min": {
@@ -42,7 +42,7 @@
         },
         "min_detect_area": 7,
         "detect_loc": {
-            "y": 78,
+            "y": 82,
             "radius": 2
         }
     },
