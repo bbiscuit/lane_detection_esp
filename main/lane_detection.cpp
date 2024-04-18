@@ -46,7 +46,7 @@
 static char TAG[]="lane_detection";
 
 // If this is a "1," then send the raw image from the ESP-32 over the serial port. If 0, don't.
-#define CALIBRATION_MODE 0
+#define CALIBRATION_MODE 1
 
 // The pin to write to.
 #define TX_GPIO GPIO_NUM_1
