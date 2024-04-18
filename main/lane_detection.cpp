@@ -25,6 +25,7 @@
 #include "esp_camera.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "driver/uart.h"
 
 
 // FreeRTOS imports
@@ -49,6 +50,9 @@ static char TAG[]="lane_detection";
 
 // The pin to write to.
 #define TX_GPIO GPIO_NUM_1
+
+// The UART device to use for control transmission.
+#define UART_NUM UART_NUM_0
 
 // The baudrate of the TX communication.
 constexpr uint16_t tx_baud = 19200;
@@ -386,11 +390,15 @@ inline void main_loop()
     ssd1306_init(&screen, lane_detect::SCREEN_WIDTH, lane_detect::SCREEN_HEIGHT);
 
     // Init tx pin
-    gpio_reset_pin(TX_GPIO);
-    gpio_reset_pin(GPIO_NUM_3);
-    gpio_set_direction(TX_GPIO, GPIO_MODE_OUTPUT);
-    gpio_set_direction(GPIO_NUM_3, GPIO_MODE_OUTPUT);
-    bool write_val = false;
+    uart_config_t uart_config = {
+        .baud_rate = 19200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+    uart_param_config(0, &uart_config);
+    uart_driver_install(0, 1024 * 2, 0, 0, NULL, 0);
 
     while (true)
     {
@@ -436,9 +444,12 @@ inline void main_loop()
         params.stop_detected = detected;
         output_to_screen(screen, params);
 
-        gpio_set_level(TX_GPIO, write_val);
-        gpio_set_level(GPIO_NUM_3, write_val);
-        write_val = !write_val;
+        // Write to TX.
+        auto dist_string = std::to_string(outside_dist_from_ideal);
+        uart_write_bytes(UART_NUM, "D", 1);
+        uart_write_bytes(UART_NUM, dist_string.data(), dist_string.size());
+        uart_write_bytes(UART_NUM, "E", 1);
+
         vTaskDelay(1);
     }
 }
