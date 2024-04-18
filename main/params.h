@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-constexpr uint8_t expected_line_pos = 81;
+constexpr uint8_t expected_line_pos = 66;
 
 constexpr uint8_t expected_red_y = 82;
 constexpr uint8_t expected_red_radius = 2;
