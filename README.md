@@ -1,14 +1,14 @@
-# Esp32 Hello OpenCV
+# ESP-Image-USB
+This repository contains the source code for the "senior" safe-town robot, which seeks to navigate
+its course using image processing techniques with an OpenCV fork rather than IR sensors.
 
-This is a basic example to test that OpenCV works correctly on the ESP32. The project only creates some matrices and apply basic operations on them.
+# Transmission to the Junior Robot
+The define `UART_NUM` specifies the UART port which the ESP-32 transmits its control data over.
+This includes a steering parameter and whether or not the stop-line has been detected. The protocol
+for these is specified in the table below. The character format for the transmission is ASCII, and
+all transmitted numbers are converted to ASCII prior to the send.
 
-# Timing Statistics
-
-These statistics are taken running at a tick-rate of 1,000 Hz, which is reflected in the
-milliseconds calculation. These are also taken without using the optional `crop_row`
-parameter, so speeds may be faster than here recorded.
-
-| Routine | Ticks | Milliseconds |
-| ------- | ----- | ------------ |
-| `thresh_and_disp` | 36 | 36 ms |
-| `get_lane_center` | 1 | 1 ms |
+| Transmission | Format | Description |
+| ------------ | ------ | ----------- |
+| Steering | `D<val>E` | The distance between the position of the white line detected and its "ideal" value. A negative value if the car is too far to the right; a positive value if the car is too far to the left. |
+| Stop Detect | `S<val>E` | Whether or not the stop line has been detected. A 1 if detected, 0 otherwise. |
