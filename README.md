@@ -2,6 +2,15 @@
 This repository contains the source code for the "senior" safe-town robot, which seeks to navigate
 its course using image processing techniques with an OpenCV fork rather than IR sensors.
 
+## Project Structure
+`main/`\
+   |___ `lane_detection.cpp` - Contains the driver code.\
+   |___ `lcd.(h|cpp)` - Contains helper functions for writing data to an attached LCD.\
+   |___ `params.h` - See debugger section. Contains configured constants for detection.\
+   |___ `camera_task.(h|cpp)` - Contains helper functions for camera/OpenCV interfacing.\
+`debugger.py` - The debugger application. See debugger section.\
+`gen_params.py` - Generates debugger parameters. See debugger section.
+
 ## Transmission to the Junior Robot
 The define `UART_NUM` specifies the UART port which the ESP-32 transmits its control data over.
 This includes a steering parameter and whether or not the stop-line has been detected. The protocol
