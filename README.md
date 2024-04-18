@@ -26,6 +26,10 @@ It's important to note that because of hardware limitations the ESP-32 cannot be
 the LCD screen is connected to the board, so make sure that it is removed prior to running
 `idf.py flash`.
 
+## Using the Debugger
+Debugger.py is a Python script which allows environmental parameters to be configured for the
+detection done on the ESP-32 CAM. _Finish!_
+
 ## Transmission to the Junior Robot
 The define `UART_NUM` specifies the UART port which the ESP-32 transmits its control data over.
 This includes a steering parameter and whether or not the stop-line has been detected. The protocol
