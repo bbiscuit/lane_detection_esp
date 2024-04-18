@@ -4,10 +4,11 @@ its course using image processing techniques with an OpenCV fork rather than IR 
 
 ## Project Structure
 `main/`\
-   |___ `lane_detection.cpp` - Contains the driver code.\
-   |___ `lcd.(h|cpp)` - Contains helper functions for writing data to an attached LCD.\
-   |___ `params.h` - See debugger section. Contains configured constants for detection.\
-   |___ `camera_task.(h|cpp)` - Contains helper functions for camera/OpenCV interfacing.\
+&nbsp; &nbsp;|___ `lane_detection.cpp` - Contains the driver code.\
+&nbsp; &nbsp;|___ `lcd.(h|cpp)` - Contains helper functions for writing data to an attached LCD.\
+&nbsp; &nbsp;|___ `params.h` - See debugger section. Contains configured constants for detection.\
+&nbsp; &nbsp;|___ `camera_task.(h|cpp)` - Contains helper functions for camera/OpenCV interfacing.\
+\
 `debugger.py` - The debugger application. See debugger section.\
 `gen_params.py` - Generates debugger parameters. See debugger section.
 
