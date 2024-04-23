@@ -28,7 +28,12 @@ the LCD screen is connected to the board, so make sure that it is removed prior 
 
 ## Using the Debugger
 Debugger.py is a Python script which allows environmental parameters to be configured for the
-detection done on the ESP-32 CAM. _Finish!_
+detection done on the ESP-32 CAM. It may be run using the following command:\
+`python3 debugger.py`\
+This program will wait until a frame from the camera has been received via the USB cable from
+the ESP-32. Once a frame has been detected, it will print it and other helpful information.
+
+There are a few parameters which may be configured
 
 ## Transmission to the Junior Robot
 The define `UART_NUM` specifies the UART port which the ESP-32 transmits its control data over.
